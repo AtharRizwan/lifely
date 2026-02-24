@@ -11,10 +11,12 @@ class LifelyShell extends StatefulWidget {
     super.key,
     required this.themeMode,
     required this.onThemeModeChanged,
+    required this.onLogout,
   });
 
   final ThemeMode themeMode;
   final ValueChanged<bool> onThemeModeChanged;
+  final VoidCallback onLogout;
 
   @override
   State<LifelyShell> createState() => _LifelyShellState();
@@ -29,6 +31,7 @@ class _LifelyShellState extends State<LifelyShell> {
       DashboardScreen(
         themeMode: widget.themeMode,
         onThemeModeChanged: widget.onThemeModeChanged,
+        onLogout: widget.onLogout,
       ),
       PlannerScreen(
         themeMode: widget.themeMode,

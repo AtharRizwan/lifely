@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'auth_flow.dart';
 import 'lifely_shell.dart';
 
 class LifelyApp extends StatefulWidget {
@@ -12,10 +13,17 @@ class LifelyApp extends StatefulWidget {
 
 class _LifelyAppState extends State<LifelyApp> {
   ThemeMode _themeMode = ThemeMode.light;
+  bool _isAuthenticated = false;
 
   void _updateThemeMode(bool isDark) {
     setState(() {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
+
+  void _setAuthenticated(bool isAuthenticated) {
+    setState(() {
+      _isAuthenticated = isAuthenticated;
     });
   }
 
@@ -27,10 +35,13 @@ class _LifelyAppState extends State<LifelyApp> {
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
       themeMode: _themeMode,
-      home: LifelyShell(
-        themeMode: _themeMode,
-        onThemeModeChanged: _updateThemeMode,
-      ),
+      home: _isAuthenticated
+          ? LifelyShell(
+              themeMode: _themeMode,
+              onThemeModeChanged: _updateThemeMode,
+              onLogout: () => _setAuthenticated(false),
+            )
+          : AuthFlow(onAuthenticated: () => _setAuthenticated(true)),
     );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'settings_screen.dart';
+import 'profile_screen.dart';
 import '../utils/navigation.dart';
 import '../utils/time.dart';
 import '../widgets/app_bars/lifely_sliver_app_bar.dart';
@@ -19,10 +19,12 @@ class DashboardScreen extends StatelessWidget {
     super.key,
     required this.themeMode,
     required this.onThemeModeChanged,
+    required this.onLogout,
   });
 
   final ThemeMode themeMode;
   final ValueChanged<bool> onThemeModeChanged;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -43,8 +45,7 @@ class DashboardScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) =>
-                        SettingsScreen(onThemeModeChanged: onThemeModeChanged),
+                    builder: (_) => ProfileScreen(onLogout: onLogout),
                   ),
                 );
               },
