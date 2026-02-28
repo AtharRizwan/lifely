@@ -29,7 +29,7 @@ ThemeData buildTheme(Brightness brightness) {
       brightness: brightness,
       primary: slateBlue,
       onPrimary: Colors.white,
-      secondary: slateBlue.withOpacity(0.16),
+      secondary: slateBlue.withValues(alpha: 0.16),
       onSecondary: isDark ? Colors.white : ink,
       error: const Color(0xFFD65A5A),
       onError: Colors.white,

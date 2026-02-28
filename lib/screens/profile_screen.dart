@@ -38,12 +38,14 @@ class ProfileScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Athar Khan', style: theme.textTheme.titleLarge),
+                        Text('Athar Rizwan', style: theme.textTheme.titleLarge),
                         const SizedBox(height: 4),
                         Text(
-                          'athar@example.com',
+                          'atharrizwan234@gmail.com',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       ],

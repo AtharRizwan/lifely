@@ -30,7 +30,7 @@ class ActionCard extends StatelessWidget {
             Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 12),

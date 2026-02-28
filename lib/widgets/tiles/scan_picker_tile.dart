@@ -26,7 +26,7 @@ class ScanPickerTile extends StatelessWidget {
         subtitle: Text(
           subtitle,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),

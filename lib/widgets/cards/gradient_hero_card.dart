@@ -22,7 +22,7 @@ class GradientHeroCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             theme.colorScheme.surfaceContainerHighest,
-            theme.colorScheme.surface.withOpacity(0.9),
+            theme.colorScheme.surface.withValues(alpha: 0.9),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -41,7 +41,7 @@ class GradientHeroCard extends StatelessWidget {
           Text(
             footer,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],

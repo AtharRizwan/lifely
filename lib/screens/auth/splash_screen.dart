@@ -13,7 +13,7 @@ class SplashScreen extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               colors.surface,
-              colors.surfaceContainerHighest.withOpacity(0.85),
+              colors.surfaceContainerHighest.withValues(alpha: 0.85),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -26,7 +26,7 @@ class SplashScreen extends StatelessWidget {
               right: -40,
               child: _GlowOrb(
                 size: 200,
-                color: colors.primary.withOpacity(0.15),
+                color: colors.primary.withValues(alpha: 0.15),
               ),
             ),
             Positioned(
@@ -34,7 +34,7 @@ class SplashScreen extends StatelessWidget {
               left: -60,
               child: _GlowOrb(
                 size: 220,
-                color: colors.primary.withOpacity(0.12),
+                color: colors.primary.withValues(alpha: 0.12),
               ),
             ),
             SafeArea(
@@ -52,7 +52,7 @@ class SplashScreen extends StatelessWidget {
                         'Your day, curated with calm focus.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurface.withOpacity(0.7),
+                          color: colors.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -91,13 +91,16 @@ class _LogoMark extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.95), color.withOpacity(0.55)],
+          colors: [
+            color.withValues(alpha: 0.95),
+            color.withValues(alpha: 0.55),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.25),
+            color: color.withValues(alpha: 0.25),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -131,7 +134,7 @@ class _GlowOrb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
+        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
       ),
     );
   }

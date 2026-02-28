@@ -27,7 +27,7 @@ class ChartCard extends StatelessWidget {
             Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 12),
@@ -43,7 +43,7 @@ class ChartCard extends StatelessWidget {
                       right: index == bars.length - 1 ? 0 : 6,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.7),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
