@@ -18,7 +18,9 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Hero(
+      tag: 'task-hero-$title',
+      child: Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
@@ -73,6 +75,7 @@ class TaskCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
