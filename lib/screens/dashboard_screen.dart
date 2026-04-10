@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'profile_screen.dart';
 import '../utils/navigation.dart';
 import '../utils/time.dart';
 import '../widgets/app_bars/lifely_sliver_app_bar.dart';
@@ -42,13 +41,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.person_outline_rounded),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ProfileScreen(onLogout: onLogout),
-                  ),
-                );
-              },
+              onPressed: () => openProfile(context, onLogout),
             ),
           ],
         ),

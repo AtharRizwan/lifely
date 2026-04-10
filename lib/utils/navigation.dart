@@ -10,63 +10,68 @@ import '../screens/planner/daily_recap_screen.dart';
 import '../screens/planner/week_editor_screen.dart';
 import '../screens/tasks/all_tasks_screen.dart';
 import '../screens/tasks/task_details_screen.dart';
+import '../screens/profile_screen.dart';
 
-void openInsights(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const InsightsScreen()));
-}
+Route _buildRoute(Widget page) {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(0.0, 0.05);
+      const end = Offset.zero;
+      const curve = Curves.easeOut;
 
-void openAllTasks(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const AllTasksScreen()));
-}
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+      var offsetAnimation = animation.drive(tween);
 
-void openTaskDetails(BuildContext context, String title) {
-  Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => TaskDetailsScreen(taskTitle: title)),
+      return FadeTransition(
+        opacity: animation,
+        child: SlideTransition(position: offsetAnimation, child: child),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 300),
   );
 }
 
+void openInsights(BuildContext context) {
+  Navigator.of(context).push(_buildRoute(const InsightsScreen()));
+}
+
+void openAllTasks(BuildContext context) {
+  Navigator.of(context).push(_buildRoute(const AllTasksScreen()));
+}
+
+void openTaskDetails(BuildContext context, String title) {
+  Navigator.of(context).push(_buildRoute(TaskDetailsScreen(taskTitle: title)));
+}
+
 void openAdjustLoad(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const AdjustLoadScreen()));
+  Navigator.of(context).push(_buildRoute(const AdjustLoadScreen()));
 }
 
 void openDailyRecap(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const DailyRecapScreen()));
+  Navigator.of(context).push(_buildRoute(const DailyRecapScreen()));
 }
 
 void openDayView(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const DayViewScreen()));
+  Navigator.of(context).push(_buildRoute(const DayViewScreen()));
 }
 
 void openWeekEditor(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const WeekEditorScreen()));
+  Navigator.of(context).push(_buildRoute(const WeekEditorScreen()));
 }
 
 void openMoodHistory(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const MoodHistoryScreen()));
+  Navigator.of(context).push(_buildRoute(const MoodHistoryScreen()));
 }
 
 void openStreakDetails(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const StreakDetailsScreen()));
+  Navigator.of(context).push(_buildRoute(const StreakDetailsScreen()));
 }
 
 void openOcrHelp(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const OcrHelpScreen()));
+  Navigator.of(context).push(_buildRoute(const OcrHelpScreen()));
+}
+
+void openProfile(BuildContext context, VoidCallback onLogout) {
+  Navigator.of(context).push(_buildRoute(ProfileScreen(onLogout: onLogout)));
 }
