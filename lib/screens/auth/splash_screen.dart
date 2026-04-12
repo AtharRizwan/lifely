@@ -1,7 +1,34 @@
 import 'package:flutter/material.dart';
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  bool _showLogo = false;
+  bool _showTitle = false;
+  bool _showTagline = false;
+  bool _showSpinner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAnimations();
+  }
+
+  void _startAnimations() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) setState(() => _showLogo = true);
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (mounted) setState(() => _showTitle = true);
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (mounted) setState(() => _showTagline = true);
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (mounted) setState(() => _showSpinner = true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,25 +71,41 @@ class SplashScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _LogoMark(color: colors.primary),
+                      AnimatedOpacity(
+                        opacity: _showLogo ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 500),
+                        child: _LogoMark(color: colors.primary),
+                      ),
                       const SizedBox(height: 24),
-                      Text('Lifely', style: theme.textTheme.headlineLarge),
+                      AnimatedOpacity(
+                        opacity: _showTitle ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 500),
+                        child: Text('Lifely', style: theme.textTheme.headlineLarge),
+                      ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Your day, curated with calm focus.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurface.withValues(alpha: 0.7),
+                      AnimatedOpacity(
+                        opacity: _showTagline ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 500),
+                        child: Text(
+                          'Your day, curated with calm focus.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurface.withValues(alpha: 0.7),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 32),
-                      SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.4,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            colors.primary,
+                      AnimatedOpacity(
+                        opacity: _showSpinner ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.primary,
+                            ),
                           ),
                         ),
                       ),
