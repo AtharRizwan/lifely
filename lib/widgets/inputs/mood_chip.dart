@@ -20,7 +20,9 @@ class MoodChip extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: selected
@@ -33,12 +35,18 @@ class MoodChip extends StatelessWidget {
                   : (theme.dividerTheme.color ?? Colors.transparent),
             ),
           ),
-          child: Text(
-            label,
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
             style: theme.textTheme.labelMedium?.copyWith(
-              color: selected ? Colors.white : theme.colorScheme.onSurface,
-              fontWeight: selected ? FontWeight.w600 : null,
-            ),
+                  color: selected ? Colors.white : theme.colorScheme.onSurface,
+                  fontWeight: selected ? FontWeight.w600 : null,
+                ) ??
+                TextStyle(
+                  color: selected ? Colors.white : theme.colorScheme.onSurface,
+                  fontWeight: selected ? FontWeight.w600 : null,
+                ),
+            child: Text(label),
           ),
         ),
       ),
