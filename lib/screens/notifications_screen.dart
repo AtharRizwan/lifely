@@ -38,10 +38,18 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Animation<Offset> _createSlideAnimation(double start, double end) {
-    return Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+    return Tween<Offset>(begin: const Offset(1.0, 0), end: Offset.zero)
         .animate(CurvedAnimation(
       parent: _controller,
       curve: Interval(start, end, curve: Curves.easeOutCubic),
+    ));
+  }
+
+  Animation<double> _createFadeAnimation(double start, double end) {
+    return Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(
+      parent: _controller,
+      curve: Interval(start, end, curve: Curves.easeIn),
     ));
   }
 
@@ -70,30 +78,39 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              SlideTransition(
-                position: _createSlideAnimation(0.0, 0.6),
-                child: const NotificationTile(
-                  title: 'Lab report due tomorrow',
-                  body: 'Draft 2 pages to stay on track.',
-                  time: '2h ago',
+              FadeTransition(
+                opacity: _createFadeAnimation(0.0, 0.6),
+                child: SlideTransition(
+                  position: _createSlideAnimation(0.0, 0.6),
+                  child: const NotificationTile(
+                    title: 'Lab report due tomorrow',
+                    body: 'Draft 2 pages to stay on track.',
+                    time: '2h ago',
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              SlideTransition(
-                position: _createSlideAnimation(0.2, 0.8),
-                child: const NotificationTile(
-                  title: 'Missed: Stats quiz review',
-                  body: 'Reschedule for 7:30 pm?',
-                  time: 'Yesterday',
+              FadeTransition(
+                opacity: _createFadeAnimation(0.2, 0.8),
+                child: SlideTransition(
+                  position: _createSlideAnimation(0.2, 0.8),
+                  child: const NotificationTile(
+                    title: 'Missed: Stats quiz review',
+                    body: 'Reschedule for 7:30 pm?',
+                    time: 'Yesterday',
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              SlideTransition(
-                position: _createSlideAnimation(0.4, 1.0),
-                child: const NotificationTile(
-                  title: 'Daily recap ready',
-                  body: '2 tasks done, 3 pending.',
-                  time: '9:05 pm',
+              FadeTransition(
+                opacity: _createFadeAnimation(0.4, 1.0),
+                child: SlideTransition(
+                  position: _createSlideAnimation(0.4, 1.0),
+                  child: const NotificationTile(
+                    title: 'Daily recap ready',
+                    body: '2 tasks done, 3 pending.',
+                    time: '9:05 pm',
+                  ),
                 ),
               ),
             ]),
