@@ -136,7 +136,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
+    final scrollView = CustomScrollView(
       slivers: [
         LifelySliverAppBar(
           title: 'Quick add',
@@ -239,11 +239,28 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                 ],
               ),
               const SizedBox(height: 24),
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: const PrimaryButton(label: 'Add task'),
-              ),
             ]),
+          ),
+        ),
+      ],
+    );
+
+    return Column(
+      children: [
+        Expanded(child: scrollView),
+        Container(
+          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 12),
+          decoration: BoxDecoration(
+            color: widget.themeMode == ThemeMode.dark ? const Color(0xFF0D0F14) : Colors.white,
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).dividerTheme.color ?? Colors.transparent,
+              ),
+            ),
+          ),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: const PrimaryButton(label: 'Add task'),
           ),
         ),
       ],
