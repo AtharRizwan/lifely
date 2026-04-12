@@ -26,12 +26,29 @@ class AddTaskScreen extends StatefulWidget {
   State<AddTaskScreen> createState() => _AddTaskScreenState();
 }
 
-class _AddTaskScreenState extends State<AddTaskScreen> {
+class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProviderStateMixin {
   final Set<String> _selectedCategories = {'Academics'};
   final TextEditingController _taskController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   List<String> _summaryBullets = const [];
   String? _extractedText;
+
+  late final AnimationController _scaleController;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scaleAnimation = CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    );
+    _scaleController.forward();
+  }
 
   void _toggleCategory(String label) {
     setState(() {
@@ -113,6 +130,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void dispose() {
     _taskController.dispose();
     _notesController.dispose();
+    _scaleController.dispose();
     super.dispose();
   }
 
@@ -221,7 +239,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              const PrimaryButton(label: 'Add task'),
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: const PrimaryButton(label: 'Add task'),
+              ),
             ]),
           ),
         ),
