@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
 import '../../utils/navigation.dart';
 import '../../utils/snackbar.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
@@ -22,6 +23,8 @@ class PlannerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final store = AppScope.of(context);
+    final blocks = store.plannerBlocks;
     return CustomScrollView(
       slivers: [
         LifelySliverAppBar(
@@ -51,33 +54,23 @@ class PlannerScreen extends StatelessWidget {
                 onActionTap: () => openDayView(context),
               ),
               const SizedBox(height: 10),
-              TimelineEntry(
-                time: '9:00',
-                title: 'Neuroscience lecture',
-                detail: 'Hall B',
-                accent: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 12),
-              const TimelineEntry(
-                time: '11:30',
-                title: 'Library focus',
-                detail: 'Chapter 5 notes',
-                accent: Color(0xFF6C8A7B),
-              ),
-              const SizedBox(height: 12),
-              const TimelineEntry(
-                time: '2:30',
-                title: 'Lab report outline',
-                detail: 'Submit to portal',
-                accent: Color(0xFFD8A15C),
-              ),
-              const SizedBox(height: 12),
-              TimelineEntry(
-                time: '4:10',
-                title: 'TA office hours',
-                detail: 'Stats Q&A',
-                accent: theme.colorScheme.primary,
-              ),
+              if (blocks.isEmpty)
+                Text(
+                  'No blocks yet. Add one in week editor.',
+                  style: theme.textTheme.bodyMedium,
+                )
+              else
+                ...blocks.map(
+                  (block) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: TimelineEntry(
+                      time: block.timeLabel,
+                      title: block.title,
+                      detail: block.detail,
+                      accent: Color(block.accent),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 24),
               SectionHeader(
                 title: 'Week view',

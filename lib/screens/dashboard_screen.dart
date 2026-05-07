@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_scope.dart';
 import '../utils/navigation.dart';
 import '../utils/time.dart';
 import '../widgets/app_bars/lifely_sliver_app_bar.dart';
@@ -28,12 +29,17 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final store = AppScope.of(context);
     final greeting = timeBasedGreeting(DateTime.now());
+    final userName = store.profile?.name ?? 'Student';
+    final todaysTasks = store.tasks.take(3).toList();
+    final completed = store.completedTasks;
+    final pending = store.pendingTasks;
     return CustomScrollView(
       slivers: [
         LifelySliverAppBar(
-          title: '$greeting, Athar',
-          subtitle: 'Midterm week - Focus window 2:00-5:00',
+          title: '$greeting, $userName',
+          subtitle: 'Plan your day with calm focus',
           actions: [
             ThemeToggleButton(
               isDark: themeMode == ThemeMode.dark,
@@ -49,27 +55,27 @@ class DashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              const GradientHeroCard(
-                title: 'Today, keep it tight',
-                body: '3 tasks - 1 class - 1 reflection',
-                footer: 'Recap ready at 9:00 pm',
+              GradientHeroCard(
+                title: 'Start with one clear win',
+                body: '${pending + completed} tasks planned today',
+                footer: 'Add tasks to see your recap',
               ),
               const SizedBox(height: 18),
-              const Row(
+              Row(
                 children: [
                   Expanded(
                     child: MetricTile(
                       label: 'Focus',
-                      value: '2h 40m',
-                      detail: 'Deep work',
+                      value: '${completed} done',
+                      detail: '${pending} pending',
                     ),
                   ),
-                  SizedBox(width: 14),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: MetricTile(
                       label: 'Mood',
-                      value: 'Steady',
-                      detail: 'Logged 1 hr ago',
+                      value: store.latestMoodLabel,
+                      detail: 'Streak ${store.moodStreak} days',
                     ),
                   ),
                 ],
@@ -81,29 +87,27 @@ class DashboardScreen extends StatelessWidget {
                 onActionTap: () => openAllTasks(context),
               ),
               const SizedBox(height: 10),
-              TaskCard(
-                title: 'Read Chapter 5',
-                subtitle: 'Cognitive Science - 7:00 pm',
-                badge: 'Academics',
-                accent: theme.colorScheme.primary,
-                onTap: () => openTaskDetails(context, 'Read Chapter 5'),
-              ),
-              const SizedBox(height: 12),
-              TaskCard(
-                title: 'Lab report outline',
-                subtitle: 'Bio 204 - 2:30 pm',
-                badge: 'Deadline',
-                accent: const Color(0xFFD8A15C),
-                onTap: () => openTaskDetails(context, 'Lab report outline'),
-              ),
-              const SizedBox(height: 12),
-              TaskCard(
-                title: 'TA office hours',
-                subtitle: 'Stats - 4:10 pm',
-                badge: 'Calendar',
-                accent: const Color(0xFF6C8A7B),
-                onTap: () => openTaskDetails(context, 'TA office hours'),
-              ),
+              if (todaysTasks.isEmpty)
+                Text(
+                  'No tasks yet. Add one to get started.',
+                  style: theme.textTheme.bodyMedium,
+                )
+              else
+                ...todaysTasks
+                    .map(
+                      (task) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: TaskCard(
+                          title: task.title,
+                          subtitle: task.subtitle,
+                          badge: task.category,
+                          accent: Color(task.accent),
+                          isCompleted: task.isCompleted,
+                          onTap: () => openTaskDetails(context, task.id),
+                        ),
+                      ),
+                    )
+                    .toList(),
               const SizedBox(height: 20),
               SectionHeader(
                 title: 'Suggestion',
@@ -114,7 +118,7 @@ class DashboardScreen extends StatelessWidget {
               const InsightCard(
                 title: 'Focus: one high-impact task.',
                 body:
-                    'Shift low-priority items to tomorrow for a cleaner block.',
+                    'Add your top task to get a focused suggestion here.',
               ),
               const SizedBox(height: 20),
               SectionHeader(
@@ -123,7 +127,11 @@ class DashboardScreen extends StatelessWidget {
                 onActionTap: () => openDailyRecap(context),
               ),
               const SizedBox(height: 10),
-              const RecapCard(completed: 2, pending: 3, mood: 'Steady'),
+              RecapCard(
+                completed: completed,
+                pending: pending,
+                mood: store.latestMoodLabel,
+              ),
               const SizedBox(height: 28),
               const OfflineBanner(text: 'Offline mode - 2 items pending sync'),
               const SizedBox(height: 20),

@@ -11,7 +11,7 @@ enum AuthStage { splash, login, signup }
 class AuthFlow extends StatefulWidget {
   const AuthFlow({super.key, required this.onAuthenticated});
 
-  final VoidCallback onAuthenticated;
+  final void Function(String name, String email) onAuthenticated;
 
   @override
   State<AuthFlow> createState() => _AuthFlowState();
@@ -53,12 +53,12 @@ class _AuthFlowState extends State<AuthFlow> {
         return const SplashScreen();
       case AuthStage.login:
         return LoginScreen(
-          onLogin: widget.onAuthenticated,
+          onLogin: () => widget.onAuthenticated('', ''),
           onSignupTap: _showSignup,
         );
       case AuthStage.signup:
         return SignupScreen(
-          onSignup: widget.onAuthenticated,
+          onSignup: () => widget.onAuthenticated('', ''),
           onLoginTap: _showLogin,
         );
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
 import '../../widgets/cards/metric_tile.dart';
 
 class StreakDetailsScreen extends StatelessWidget {
@@ -7,26 +8,27 @@ class StreakDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final store = AppScope.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Streak details')),
       body: ListView(
         padding: const EdgeInsets.all(20),
-        children: const [
+        children: [
           MetricTile(
             label: 'Mood streak',
-            value: '5 days',
+            value: '${store.moodStreak} days',
             detail: 'Consistent check-ins',
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           MetricTile(
             label: 'Completion streak',
-            value: '3 days',
+            value: '${store.taskStreak} days',
             detail: 'Daily tasks completed',
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           MetricTile(
             label: 'Planner streak',
-            value: '7 days',
+            value: '${store.plannerBlocks.isEmpty ? 0 : 7} days',
             detail: 'Weekly planning sessions',
           ),
         ],

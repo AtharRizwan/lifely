@@ -1,16 +1,24 @@
-# lifely
+# App Name: Lifely
 
-A new Flutter project.
+## Target Users:
+University students juggling academics, extracurriculars, and personal life.
 
-## Getting Started
+## Problem it Solves:
+Traditional planners are rigid and ignore the emotional toll of university life, often leading to burnout. Lifely acts as an empathetic AI assistant that combines smart task management with mental wellness tracking. It learns your habits, monitors your mood, and intelligently adjusts your daily workload to ensure you stay productive without sacrificing your mental health.
 
-This project is a starting point for a Flutter application.
+## Students
+| **Name**       | **CMS ID** |
+|----------------|------------|
+| Muhammad Athar | 408369     |
+| Ahmed Sultan   | 429606     |
 
-A few resources to get you started if this is your first Flutter project:
+## Main Screens
+- Splash Screen: app intro before auth flow starts.
+- Login / Signup: authentication to enter the app.
+- Home (Dashboard): daily overview, tasks, and insights.
+- Planner: timeline and week planning.
+- Add: quick add tasks, scan capture, and note summaries.
+- Journal (Mood): log moods and reflect.
+- Alerts (Notifications): view notifications and updates.
+- Profile: user info and logout.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.

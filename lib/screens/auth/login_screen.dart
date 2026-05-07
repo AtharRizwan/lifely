@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
+import '../../data/app_store.dart';
 import '../../widgets/buttons/primary_button.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,19 +20,48 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _isSubmitting = false;
+  String? _errorMessage;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 700));
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    final store = AppScope.of(context);
+    final result = await store.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
     if (!mounted) {
       return;
     }
     setState(() => _isSubmitting = false);
-    widget.onLogin();
+    switch (result) {
+      case AuthResult.success:
+        widget.onLogin();
+        break;
+      case AuthResult.notFound:
+        setState(() => _errorMessage = 'No account found with this email.');
+        break;
+      case AuthResult.wrongPassword:
+        setState(() => _errorMessage = 'Incorrect password. Try again.');
+        break;
+      case AuthResult.emailTaken:
+        break;
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -63,6 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           children: [
                             TextFormField(
+                              controller: _emailController,
                               decoration: const InputDecoration(
                                 labelText: 'Email',
                               ),
@@ -79,6 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
+                              controller: _passwordController,
                               decoration: const InputDecoration(
                                 labelText: 'Password',
                               ),
@@ -94,6 +127,34 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             const SizedBox(height: 18),
+                            if (_errorMessage != null) ...[
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.error.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: theme.colorScheme.error,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _errorMessage!,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.error,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                            ],
                             PrimaryButton(
                               label: _isSubmitting
                                   ? 'Signing in...'

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_scope.dart';
+import '../data/app_store.dart';
 import '../theme/app_theme.dart';
 import 'auth_flow.dart';
 import 'lifely_shell.dart';
@@ -12,36 +14,55 @@ class LifelyApp extends StatefulWidget {
 }
 
 class _LifelyAppState extends State<LifelyApp> {
-  ThemeMode _themeMode = ThemeMode.light;
-  bool _isAuthenticated = false;
+  final AppStore _store = AppStore();
+  bool _isReady = false;
 
-  void _updateThemeMode(bool isDark) {
-    setState(() {
-      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
   }
 
-  void _setAuthenticated(bool isAuthenticated) {
-    setState(() {
-      _isAuthenticated = isAuthenticated;
-    });
+  Future<void> _initialize() async {
+    await _store.initialize();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isReady = true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lifely',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
-      themeMode: _themeMode,
-      home: _isAuthenticated
-          ? LifelyShell(
-              themeMode: _themeMode,
-              onThemeModeChanged: _updateThemeMode,
-              onLogout: () => _setAuthenticated(false),
-            )
-          : AuthFlow(onAuthenticated: () => _setAuthenticated(true)),
+    return AppScope(
+      store: _store,
+      child: AnimatedBuilder(
+        animation: _store,
+        builder: (context, _) {
+          return MaterialApp(
+            title: 'Lifely',
+            debugShowCheckedModeBanner: false,
+            theme: buildTheme(Brightness.light),
+            darkTheme: buildTheme(Brightness.dark),
+            themeMode: _store.themeMode,
+            home: !_isReady
+                ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
+                : _store.isAuthenticated
+                    ? LifelyShell(
+                        themeMode: _store.themeMode,
+                        onThemeModeChanged: (isDark) => _store.setThemeMode(
+                          isDark ? ThemeMode.dark : ThemeMode.light,
+                        ),
+                        onLogout: _store.logout,
+                      )
+                    : AuthFlow(
+                        onAuthenticated: (name, email) =>
+                            _store.login(name: name, email: email),
+                      ),
+          );
+        },
+      ),
     );
   }
 }

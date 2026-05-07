@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
+import '../../data/app_store.dart';
+import '../../models/app_models.dart';
 import '../../utils/navigation.dart';
 import '../../utils/snackbar.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
@@ -32,6 +35,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   final TextEditingController _notesController = TextEditingController();
   List<String> _summaryBullets = const [];
   String? _extractedText;
+  final List<String> _createdTasks = [];
 
   late final AnimationController _scaleController;
   late final Animation<double> _scaleAnimation;
@@ -73,7 +77,29 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       showSnackBar(context, 'Scan notes or capture an image first.');
       return;
     }
-    showSnackBar(context, 'Created 3 tasks from scan.');
+    final store = AppScope.of(context);
+    final bullets = _generateSummaryBullets(_extractedText!);
+    final created = <String>[];
+    for (final line in bullets.take(3)) {
+      final task = TaskItem(
+        id: 'task-${DateTime.now().millisecondsSinceEpoch}-${created.length}',
+        title: line,
+        subtitle: 'From scan - Today',
+        category: 'Academics',
+        accent: 0xFF5B8E7D,
+        scheduledAt: DateTime.now(),
+        estimatedMinutes: 40,
+        isCompleted: false,
+      );
+      store.addTask(task);
+      created.add(line);
+    }
+    setState(() {
+      _createdTasks
+        ..clear()
+        ..addAll(created);
+    });
+    showSnackBar(context, 'Created ${created.length} tasks from scan.');
   }
 
   void _summarizeNotes() {
@@ -85,7 +111,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   }
 
   void _applyRewrite() {
-    const suggestion = 'Review quiz material on Sunday afternoon';
+    final text = _taskController.text.trim();
+    if (text.isEmpty) {
+      showSnackBar(context, 'Add a draft task first.');
+      return;
+    }
+    final suggestion = '${text[0].toUpperCase()}${text.substring(1)}';
     setState(() {
       _taskController.text = suggestion;
     });
@@ -136,6 +167,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final store = AppScope.of(context);
     final scrollView = CustomScrollView(
       slivers: [
         LifelySliverAppBar(
@@ -161,8 +193,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                 controller: _taskController,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                  hintText: '“Quiz prep Sunday afternoon”',
+                  hintText: '“Add a task in your own words”',
                 ),
+              ),
+              const SizedBox(height: 16),
+              PrimaryButton(
+                label: 'Add task now',
+                onPressed: () => _addTask(store),
               ),
               const SizedBox(height: 16),
               SectionHeader(
@@ -205,10 +242,21 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                 onActionTap: _applyRewrite,
               ),
               const SizedBox(height: 10),
-              const InsightCard(
-                title: 'Review quiz material on Sunday afternoon',
-                body: 'Category: Academics - Due: Sun, 4:00 pm',
-              ),
+              if (_taskController.text.trim().isEmpty)
+                Text(
+                  'Write a draft task to see a suggested rewrite.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            Theme.of(context).colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                      ),
+                )
+              else
+                InsightCard(
+                  title: _taskController.text.trim(),
+                  body: 'Tap Apply to rewrite for clarity.',
+                ),
               const SizedBox(height: 16),
               const SectionHeader(title: 'Quick categories'),
               const SizedBox(height: 10),
@@ -239,6 +287,24 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                 ],
               ),
               const SizedBox(height: 24),
+              if (_createdTasks.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Created from scan',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    ..._createdTasks.map(
+                      (task) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text('• $task'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
             ]),
           ),
         ),
@@ -260,11 +326,38 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
           ),
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: const PrimaryButton(label: 'Add task'),
+            child: PrimaryButton(
+              label: 'Add task',
+              onPressed: () => _addTask(store),
+            ),
           ),
         ),
       ],
     );
+  }
+}
+
+extension on _AddTaskScreenState {
+  void _addTask(AppStore store) {
+    final text = _taskController.text.trim();
+    if (text.isEmpty) {
+      showSnackBar(context, 'Enter a task first.');
+      return;
+    }
+    final task = TaskItem(
+      id: 'task-${DateTime.now().millisecondsSinceEpoch}',
+      title: text,
+      subtitle: 'Quick add - Today',
+      category:
+          _selectedCategories.isEmpty ? 'General' : _selectedCategories.first,
+      accent: 0xFF5B8E7D,
+      scheduledAt: DateTime.now(),
+      estimatedMinutes: 45,
+      isCompleted: false,
+    );
+    store.addTask(task);
+    _taskController.clear();
+    showSnackBar(context, 'Task added.');
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
 import '../../utils/navigation.dart';
 import '../../widgets/cards/task_card.dart';
 
@@ -9,34 +10,32 @@ class AllTasksScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final store = AppScope.of(context);
+    final tasks = store.tasks;
     return Scaffold(
       appBar: AppBar(title: const Text('All tasks')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          TaskCard(
-            title: 'Read Chapter 5',
-            subtitle: 'Cognitive Science - 7:00 pm',
-            badge: 'Academics',
-            accent: theme.colorScheme.primary,
-            onTap: () => openTaskDetails(context, 'Read Chapter 5'),
-          ),
-          const SizedBox(height: 12),
-          TaskCard(
-            title: 'Lab report outline',
-            subtitle: 'Bio 204 - 2:30 pm',
-            badge: 'Deadline',
-            accent: const Color(0xFFD8A15C),
-            onTap: () => openTaskDetails(context, 'Lab report outline'),
-          ),
-          const SizedBox(height: 12),
-          TaskCard(
-            title: 'TA office hours',
-            subtitle: 'Stats - 4:10 pm',
-            badge: 'Calendar',
-            accent: const Color(0xFF6C8A7B),
-            onTap: () => openTaskDetails(context, 'TA office hours'),
-          ),
+          if (tasks.isEmpty)
+            Text(
+              'No tasks yet. Add one from Quick add.',
+              style: theme.textTheme.bodyMedium,
+            )
+          else
+            ...tasks.map(
+              (task) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TaskCard(
+                  title: task.title,
+                  subtitle: task.subtitle,
+                  badge: task.category,
+                  accent: Color(task.accent),
+                  isCompleted: task.isCompleted,
+                  onTap: () => openTaskDetails(context, task.id),
+                ),
+              ),
+            ),
         ],
       ),
     );

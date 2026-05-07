@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
+import '../../data/app_store.dart';
 import '../../widgets/buttons/primary_button.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -18,19 +20,48 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _isSubmitting = false;
+  String? _errorMessage;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 800));
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    final store = AppScope.of(context);
+    final result = await store.signUp(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
     if (!mounted) {
       return;
     }
     setState(() => _isSubmitting = false);
-    widget.onSignup();
+    switch (result) {
+      case AuthResult.success:
+        widget.onSignup();
+        break;
+      case AuthResult.emailTaken:
+        setState(() => _errorMessage = 'An account with this email already exists.');
+        break;
+      default:
+        break;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -66,6 +97,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: Column(
                           children: [
                             TextFormField(
+                              controller: _nameController,
                               decoration: const InputDecoration(
                                 labelText: 'Full name',
                               ),
@@ -79,6 +111,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
+                              controller: _emailController,
                               decoration: const InputDecoration(
                                 labelText: 'Email',
                               ),
@@ -95,6 +128,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
+                              controller: _passwordController,
                               decoration: const InputDecoration(
                                 labelText: 'Password',
                               ),
@@ -110,6 +144,34 @@ class _SignupScreenState extends State<SignupScreen> {
                               },
                             ),
                             const SizedBox(height: 18),
+                            if (_errorMessage != null) ...[
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.error.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: theme.colorScheme.error,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _errorMessage!,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.error,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                            ],
                             PrimaryButton(
                               label: _isSubmitting
                                   ? 'Creating account...'

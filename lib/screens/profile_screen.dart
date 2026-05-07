@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_scope.dart';
 import '../widgets/buttons/primary_button.dart';
 import '../widgets/cards/insight_card.dart';
 import '../widgets/tiles/settings_tile.dart';
@@ -12,6 +13,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final store = AppScope.of(context);
+    final profile = store.profile;
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: ListView(
@@ -25,9 +28,11 @@ class ProfileScreen extends StatelessWidget {
                   CircleAvatar(
                     radius: 26,
                     backgroundColor: theme.colorScheme.primary,
-                    child: const Text(
-                      'A',
-                      style: TextStyle(
+                    child: Text(
+                      profile?.name.isNotEmpty == true
+                          ? profile!.name.substring(0, 1).toUpperCase()
+                          : 'S',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
@@ -38,10 +43,13 @@ class ProfileScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Athar Rizwan', style: theme.textTheme.titleLarge),
+                        Text(
+                          profile?.name ?? 'Student',
+                          style: theme.textTheme.titleLarge,
+                        ),
                         const SizedBox(height: 4),
                         Text(
-                          'atharrizwan234@gmail.com',
+                          profile?.email ?? 'student@lifely.app',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -65,6 +73,16 @@ class ProfileScreen extends StatelessWidget {
             body: 'Consistency compounds. Keep a light rhythm today.',
           ),
           const SizedBox(height: 18),
+          OutlinedButton(
+            onPressed: () {
+              store.clearLocalData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Local data cleared.')),
+              );
+            },
+            child: const Text('Clear local data'),
+          ),
+          const SizedBox(height: 10),
           PrimaryButton(
             label: 'Log out',
             onPressed: onLogout,

@@ -40,8 +40,8 @@ void openAllTasks(BuildContext context) {
   Navigator.of(context).push(_buildRoute(const AllTasksScreen()));
 }
 
-void openTaskDetails(BuildContext context, String title) {
-  Navigator.of(context).push(_buildRoute(TaskDetailsScreen(taskTitle: title)));
+void openTaskDetails(BuildContext context, String taskId) {
+  Navigator.of(context).push(_buildRoute(TaskDetailsScreen(taskId: taskId)));
 }
 
 void openAdjustLoad(BuildContext context) {

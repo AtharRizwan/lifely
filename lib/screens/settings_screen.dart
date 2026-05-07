@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/cards/insight_card.dart';
 import '../widgets/tiles/settings_tile.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -29,9 +28,12 @@ class SettingsScreen extends StatelessWidget {
           const SettingsTile(title: 'Font size', value: 'Default'),
           const SettingsTile(title: 'Layout density', value: 'Comfortable'),
           const SizedBox(height: 20),
-          const InsightCard(
-            title: 'Daily affirmation',
-            body: 'Small steps compound. Focus on one task now.',
+          Text(
+            'Personalization options will appear as you add more data.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
           ),
         ],
       ),

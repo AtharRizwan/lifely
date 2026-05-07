@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
 import '../buttons/primary_button.dart';
 import '../tiles/mini_stat.dart';
 
@@ -11,6 +12,7 @@ class ProgressTeaserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final store = AppScope.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -20,24 +22,31 @@ class ProgressTeaserCard extends StatelessWidget {
             Text('Progress highlights', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
-              'Your weekly rhythm is steady. Open insights for charts and trends.',
+              store.tasks.isEmpty
+                  ? 'Add tasks to start tracking your rhythm.'
+                  : 'Your weekly rhythm is coming into focus.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 12),
-            const Row(
+            Row(
               children: [
                 Expanded(
-                  child: MiniStat(label: 'Streak', value: '5 days'),
+                  child: MiniStat(label: 'Streak', value: '${store.taskStreak}d'),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: MiniStat(label: 'Balance', value: '68%'),
+                  child: MiniStat(
+                    label: 'Balance',
+                    value: store.tasks.isEmpty
+                        ? '0%'
+                        : '${(store.completedTasks / store.tasks.length * 100).round()}%',
+                  ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: MiniStat(label: 'Achv.', value: '3'),
+                  child: MiniStat(label: 'Achv.', value: '${store.completedTasks}'),
                 ),
               ],
             ),

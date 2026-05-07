@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
+import '../../models/app_models.dart';
 import '../../utils/navigation.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../../widgets/buttons/theme_toggle_button.dart';
@@ -24,6 +26,7 @@ class MoodJournalScreen extends StatefulWidget {
 
 class _MoodJournalScreenState extends State<MoodJournalScreen> {
   String _selectedMood = 'Steady';
+  final TextEditingController _noteController = TextEditingController();
 
   void _selectMood(String mood) {
     setState(() {
@@ -31,8 +34,31 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
     });
   }
 
+  void _saveMood(BuildContext context) {
+    final store = AppScope.of(context);
+    final entry = MoodEntry(
+      id: 'mood-${DateTime.now().millisecondsSinceEpoch}',
+      mood: _selectedMood,
+      note: _noteController.text.trim().isEmpty
+          ? 'Mood logged.'
+          : _noteController.text.trim(),
+      loggedAt: DateTime.now(),
+    );
+    store.addMood(entry);
+    _noteController.clear();
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Mood saved.')));
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final store = AppScope.of(context);
     return CustomScrollView(
       slivers: [
         LifelySliverAppBar(
@@ -86,10 +112,19 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              const TextField(
+              TextField(
+                controller: _noteController,
                 maxLines: 4,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'What is driving your mood today?',
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => _saveMood(context),
+                  child: const Text('Save mood'),
                 ),
               ),
               const SizedBox(height: 20),
@@ -99,9 +134,16 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
                 onActionTap: () => openAdjustLoad(context),
               ),
               const SizedBox(height: 10),
-              const InsightCard(
-                title: 'Keep the next block light.',
-                body: 'Finish one core task, then reset.',
+              Text(
+                store.tasks.isEmpty
+                    ? 'Add a task to get a focus suggestion.'
+                    : 'Your next task is within reach. Consider a short reset after.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color:
+                          Theme.of(context).colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                    ),
               ),
               const SizedBox(height: 20),
               SectionHeader(
@@ -110,9 +152,9 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
                 onActionTap: () => openStreakDetails(context),
               ),
               const SizedBox(height: 10),
-              const MetricTile(
+              MetricTile(
                 label: 'Mood streak',
-                value: '5 days',
+                value: '${store.moodStreak} days',
                 detail: 'Consistent check-ins',
               ),
             ]),
