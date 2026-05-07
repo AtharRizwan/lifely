@@ -16,6 +16,7 @@ class ChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final maxValue = bars.isEmpty ? 1 : bars.reduce((a, b) => a > b ? a : b);
+    final safeMax = maxValue == 0 ? 1 : maxValue;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -35,7 +36,9 @@ class ChartCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(bars.length, (index) {
                 final value = bars[index];
-                final height = 80 * (value / maxValue);
+                final height = maxValue == 0
+                    ? 4.0
+                    : (80 * (value / safeMax)).clamp(4.0, 80.0);
                 return Expanded(
                   child: Container(
                     height: height,

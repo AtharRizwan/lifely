@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../ai/ai_notes_summarizer.dart';
 import '../../data/app_scope.dart';
 import '../../data/app_store.dart';
 import '../../models/app_models.dart';
@@ -10,7 +11,6 @@ import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/buttons/theme_toggle_button.dart';
 import '../../widgets/cards/capture_card.dart';
 import '../../widgets/cards/insight_card.dart';
-import '../../widgets/cards/summary_card.dart';
 import '../../widgets/inputs/category_chip.dart';
 import '../../widgets/tiles/scan_picker_tile.dart';
 import '../../widgets/tiles/section_header.dart';
@@ -33,7 +33,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   final Set<String> _selectedCategories = {'Academics'};
   final TextEditingController _taskController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-  List<String> _summaryBullets = const [];
+  AiSummaryResult? _aiResult;
   String? _extractedText;
   final List<String> _createdTasks = [];
 
@@ -78,17 +78,22 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       return;
     }
     final store = AppScope.of(context);
-    final bullets = _generateSummaryBullets(_extractedText!);
+    final aiResult = _aiSummarizer.summarize(_extractedText!);
     final created = <String>[];
-    for (final line in bullets.take(3)) {
+    final bulletsToAdd = [
+      ...aiResult.deadlines,
+      ...aiResult.actionItems,
+      ...aiResult.keyPoints,
+    ];
+    for (final line in bulletsToAdd.take(5)) {
       final task = TaskItem(
         id: 'task-${DateTime.now().millisecondsSinceEpoch}-${created.length}',
-        title: line,
+        title: line.length > 60 ? '${line.substring(0, 57)}...' : line,
         subtitle: 'From scan - Today',
         category: 'Academics',
         accent: 0xFF5B8E7D,
         scheduledAt: DateTime.now(),
-        estimatedMinutes: 40,
+        estimatedMinutes: 30,
         isCompleted: false,
       );
       store.addTask(task);
@@ -104,11 +109,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
 
   void _summarizeNotes() {
     final text = _notesController.text.trim();
+    if (text.isEmpty) {
+      showSnackBar(context, 'Paste some notes first.');
+      return;
+    }
+    final result = _aiSummarizer.summarize(text);
     setState(() {
-      _summaryBullets = _generateSummaryBullets(text);
+      _aiResult = result;
     });
-    showSnackBar(context, 'Summary ready.');
+    showSnackBar(context, 'AI analysis complete.');
   }
+
+  final _aiSummarizer = AiNotesSummarizer();
 
   void _applyRewrite() {
     final text = _taskController.text.trim();
@@ -134,28 +146,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
     );
   }
 
-  List<String> _generateSummaryBullets(String text) {
-    if (text.isEmpty) {
-      return const [
-        'Focus on the highest-impact task first.',
-        'Batch low-priority items into one block.',
-        'End with a quick review and reset.',
-      ];
-    }
-    final fragments = text
-        .split(RegExp(r'[\n\.]+'))
-        .map((fragment) => fragment.trim())
-        .where((fragment) => fragment.isNotEmpty)
-        .toList();
-    if (fragments.length >= 3) {
-      return fragments.take(5).toList();
-    }
-    return const [
-      'Summarize key tasks and deadlines.',
-      'Identify one priority for today.',
-      'Capture next steps for follow-up.',
-    ];
-  }
+
 
   @override
   void dispose() {
@@ -163,6 +154,208 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
     _notesController.dispose();
     _scaleController.dispose();
     super.dispose();
+  }
+
+  Widget _buildAiSummaryResults() {
+    final theme = Theme.of(context);
+    if (_aiResult == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Tap "Summarize notes" to get AI-powered insights.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final result = _aiResult!;
+    final hasContent = result.keyPoints.isNotEmpty ||
+        result.actionItems.isNotEmpty ||
+        result.deadlines.isNotEmpty;
+
+    if (!hasContent) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: theme.colorScheme.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Text('AI Summary', style: theme.textTheme.titleMedium),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'No structured content found. Try adding more detail.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.auto_awesome, color: theme.colorScheme.primary, size: 20),
+                const SizedBox(width: 8),
+                Text('AI Summary', style: theme.textTheme.titleMedium),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getSentimentColor(result.sentimentScore).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _getSentimentLabel(result.sentimentScore),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: _getSentimentColor(result.sentimentScore),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (result.overallSummary.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                result.overallSummary,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+            if (result.categories.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: result.categories.map((cat) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(cat, style: theme.textTheme.labelSmall),
+                  );
+                }).toList(),
+              ),
+            ],
+            if (result.deadlines.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Deadlines', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 6),
+              ...result.deadlines.map((d) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.event, size: 16, color: theme.colorScheme.error),
+                    const SizedBox(width: 6),
+                    Flexible(child: Text(d, style: theme.textTheme.bodySmall)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, size: 16),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _addTaskFromBullet(d),
+                    ),
+                  ],
+                ),
+              )),
+            ],
+            if (result.keyPoints.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Key points', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 6),
+              ...result.keyPoints.map((p) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lightbulb_outline, size: 16, color: theme.colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Flexible(child: Text(p, style: theme.textTheme.bodySmall)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, size: 16),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _addTaskFromBullet(p),
+                    ),
+                  ],
+                ),
+              )),
+            ],
+            if (result.actionItems.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Action items', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 6),
+              ...result.actionItems.map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.checklist, size: 16, color: const Color(0xFFD8A15C)),
+                    const SizedBox(width: 6),
+                    Flexible(child: Text(a, style: theme.textTheme.bodySmall)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, size: 16),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _addTaskFromBullet(a),
+                    ),
+                  ],
+                ),
+              )),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getSentimentColor(double score) {
+    if (score > 0.6) return const Color(0xFF4CAF50);
+    if (score < 0.4) return const Color(0xFFE57373);
+    return const Color(0xFFFFB74D);
+  }
+
+  String _getSentimentLabel(double score) {
+    if (score > 0.6) return 'Positive';
+    if (score < 0.4) return 'Challenging';
+    return 'Neutral';
+  }
+
+  void _addTaskFromBullet(String text) {
+    final store = AppScope.of(context);
+    final trimmed = text.length > 60 ? '${text.substring(0, 57)}...' : text;
+    store.addTask(TaskItem(
+      id: 'task-${DateTime.now().millisecondsSinceEpoch}-${text.hashCode}',
+      title: trimmed,
+      subtitle: 'From AI summary - Today',
+      category: _selectedCategories.isEmpty ? 'General' : _selectedCategories.first,
+      accent: 0xFF5B8E7D,
+      scheduledAt: DateTime.now(),
+      estimatedMinutes: 30,
+      isCompleted: false,
+    ));
+    showSnackBar(context, 'Task added: $trimmed');
   }
 
   @override
@@ -234,7 +427,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                 onPressed: _summarizeNotes,
               ),
               const SizedBox(height: 12),
-              SummaryCard(bullets: _summaryBullets),
+              _buildAiSummaryResults(),
               const SizedBox(height: 18),
               SectionHeader(
                 title: 'AI rewrite',
@@ -382,38 +575,10 @@ void _showScanPicker(
               ),
               const SizedBox(height: 12),
               ScanPickerTile(
-                title: 'Study notes - 2 pages',
-                subtitle: 'Captured today, 3:12 pm',
+                title: 'No recent scans',
+                subtitle: 'Capture your first image to see it here.',
                 onSelect: () {
                   Navigator.of(sheetContext).pop();
-                  onSelect(
-                    'Study notes: revise chapter 5, complete lab outline, schedule TA hours.',
-                  );
-                  showSnackBar(context, 'Scan selected. Text extracted.');
-                },
-              ),
-              const SizedBox(height: 10),
-              ScanPickerTile(
-                title: 'Whiteboard recap',
-                subtitle: 'Captured yesterday, 7:40 pm',
-                onSelect: () {
-                  Navigator.of(sheetContext).pop();
-                  onSelect(
-                    'Whiteboard: prioritize lab, read chapter 5, review stats quiz notes.',
-                  );
-                  showSnackBar(context, 'Scan selected. Text extracted.');
-                },
-              ),
-              const SizedBox(height: 10),
-              ScanPickerTile(
-                title: 'Lab outline draft',
-                subtitle: 'Captured yesterday, 9:05 am',
-                onSelect: () {
-                  Navigator.of(sheetContext).pop();
-                  onSelect(
-                    'Lab outline: draft intro, add references, finalize methods section.',
-                  );
-                  showSnackBar(context, 'Scan selected. Text extracted.');
                 },
               ),
             ],

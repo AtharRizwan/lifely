@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
+import '../../models/app_models.dart';
 import '../../utils/navigation.dart';
-import '../../utils/snackbar.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../../widgets/buttons/theme_toggle_button.dart';
 import '../../widgets/cards/week_overview_card.dart';
@@ -10,7 +11,7 @@ import '../../widgets/tiles/section_header.dart';
 import '../../widgets/tiles/timeline_entry.dart';
 import '../../widgets/tiles/week_strip.dart';
 
-class PlannerScreen extends StatelessWidget {
+class PlannerScreen extends StatefulWidget {
   const PlannerScreen({
     super.key,
     required this.themeMode,
@@ -21,24 +22,34 @@ class PlannerScreen extends StatelessWidget {
   final ValueChanged<bool> onThemeModeChanged;
 
   @override
+  State<PlannerScreen> createState() => _PlannerScreenState();
+}
+
+class _PlannerScreenState extends State<PlannerScreen> {
+  int _selectedDay = DateTime.now().weekday;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final store = AppScope.of(context);
-    final blocks = store.plannerBlocks;
+    final allBlocks = store.plannerBlocks;
+
+    final scheduler = AiScheduler();
+    final scheduleBlocks = scheduler.schedule(store.tasks);
+
+    final now = DateTime.now();
+    final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    final dayName = days[_selectedDay - 1];
+    final weekOfYear = ((now.difference(DateTime(now.year, 1, 1)).inDays) / 7).ceil();
     return CustomScrollView(
       slivers: [
         LifelySliverAppBar(
           title: 'Planner',
-          subtitle: 'Thursday - Week 6',
+          subtitle: '$dayName - Week $weekOfYear',
           actions: [
             ThemeToggleButton(
-              isDark: themeMode == ThemeMode.dark,
-              onChanged: onThemeModeChanged,
-            ),
-            IconButton(
-              icon: const Icon(Icons.calendar_month_outlined),
-              onPressed: () =>
-                  showSnackBar(context, 'Calendar view is coming soon.'),
+              isDark: widget.themeMode == ThemeMode.dark,
+              onChanged: widget.onThemeModeChanged,
             ),
           ],
         ),
@@ -46,21 +57,37 @@ class PlannerScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              const WeekStrip(),
+              WeekStrip(
+                selectedDay: _selectedDay,
+                onDaySelected: (day) => setState(() => _selectedDay = day),
+              ),
               const SizedBox(height: 18),
+              if (scheduleBlocks.isNotEmpty) ...[
+                SectionHeader(
+                  title: 'AI Schedule',
+                  action: '',
+                  onActionTap: () {},
+                ),
+                const SizedBox(height: 10),
+                ...scheduleBlocks.map((block) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildScheduledBlock(block, theme, store),
+                )),
+                const SizedBox(height: 18),
+              ],
               SectionHeader(
-                title: 'Timeline',
+                title: 'My Timeline',
                 action: 'Day view',
                 onActionTap: () => openDayView(context),
               ),
               const SizedBox(height: 10),
-              if (blocks.isEmpty)
+              if (allBlocks.isEmpty)
                 Text(
                   'No blocks yet. Add one in week editor.',
                   style: theme.textTheme.bodyMedium,
                 )
               else
-                ...blocks.map(
+                ...allBlocks.map(
                   (block) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: TimelineEntry(
@@ -83,6 +110,106 @@ class PlannerScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildScheduledBlock(ScheduledBlock block, ThemeData theme, dynamic store) {
+    final isPeak = block.energyLevel == 'High focus';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isPeak
+                        ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${block.startHour}:00 - ${block.endHour}:00',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isPeak ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isPeak
+                        ? const Color(0xFF4CAF50).withValues(alpha: 0.15)
+                        : const Color(0xFFFFB74D).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    block.energyLevel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isPeak ? const Color(0xFF4CAF50) : const Color(0xFFFFB74D),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Icon(Icons.auto_awesome, size: 16, color: theme.colorScheme.primary),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(block.taskTitle, style: theme.textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(
+              block.reason,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  _showScheduleActions(context, block, store);
+                },
+                child: const Text('Add to planner'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showScheduleActions(BuildContext context, ScheduledBlock block, dynamic store) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('"${block.taskTitle}" — ${block.startHour}:00 to ${block.endHour}:00 (${block.energyLevel})'),
+        action: SnackBarAction(
+          label: 'Add',
+          onPressed: () {
+            store.addPlannerBlock(
+              _createPlannerBlock(block),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Block added to planner.')),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  PlannerBlock _createPlannerBlock(ScheduledBlock block) {
+    return PlannerBlock(
+      id: 'plan-${DateTime.now().millisecondsSinceEpoch}',
+      timeLabel: '${block.startHour}:00',
+      title: block.taskTitle,
+      detail: '${block.energyLevel} — ${block.reason}',
+      accent: block.energyLevel == 'High focus' ? 0xFF5B8E7D : 0xFFFFB74D.toInt(),
     );
   }
 }

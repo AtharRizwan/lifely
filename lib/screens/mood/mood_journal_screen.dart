@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
 import '../../utils/navigation.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../../widgets/buttons/theme_toggle_button.dart';
-import '../../widgets/cards/insight_card.dart';
 import '../../widgets/cards/metric_tile.dart';
 import '../../widgets/inputs/mood_chip.dart';
 import '../../widgets/tiles/section_header.dart';
@@ -59,6 +59,9 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
+    final latestMood = store.moods.isNotEmpty ? store.moods.first : null;
+    final moodAdvisor = AiMoodAdvisor();
+    final suggestion = moodAdvisor.generate(store.tasks, latestMood, store.pendingTasks);
     return CustomScrollView(
       slivers: [
         LifelySliverAppBar(
@@ -129,21 +132,44 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
               ),
               const SizedBox(height: 20),
               SectionHeader(
-                title: 'Suggestion',
+                title: 'AI Suggestion',
                 action: 'Adjust load',
                 onActionTap: () => openAdjustLoad(context),
               ),
               const SizedBox(height: 10),
-              Text(
-                store.tasks.isEmpty
-                    ? 'Add a task to get a focus suggestion.'
-                    : 'Your next task is within reach. Consider a short reset after.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
-                    ),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.primary, size: 18),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              suggestion.message,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...suggestion.tips.take(2).map((tip) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.lightbulb_outline, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text(tip, style: Theme.of(context).textTheme.labelSmall)),
+                          ],
+                        ),
+                      )),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               SectionHeader(

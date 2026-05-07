@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
 import '../../widgets/cards/recap_card.dart';
-import '../../widgets/tiles/simple_list_tile.dart';
 
 class DailyRecapScreen extends StatelessWidget {
   const DailyRecapScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final store = AppScope.of(context);
     final completed = store.tasks.where((task) => task.isCompleted).toList();
     final pending = store.tasks.where((task) => !task.isCompleted).toList();
@@ -23,21 +23,65 @@ class DailyRecapScreen extends StatelessWidget {
             mood: store.latestMoodLabel,
           ),
           const SizedBox(height: 12),
-          SimpleListTile(
-            icon: Icons.check_circle_outline,
-            title: 'Finished tasks',
-            subtitle: completed.isEmpty
-                ? 'No tasks completed yet.'
-                : completed.map((task) => task.title).take(3).join(', '),
-          ),
-          const SizedBox(height: 10),
-          SimpleListTile(
-            icon: Icons.pending_actions_outlined,
-            title: 'Pending tasks',
-            subtitle: pending.isEmpty
-                ? 'Nothing pending right now.'
-                : pending.map((task) => task.title).take(3).join(', '),
-          ),
+          Text('Finished tasks', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (completed.isEmpty)
+            Text(
+              'No tasks completed yet.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            )
+          else
+            ...completed.map(
+              (task) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.check_circle,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(task.title),
+                    subtitle: Text(task.category),
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+          Text('Pending tasks', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (pending.isEmpty)
+            Text(
+              'Nothing pending right now.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            )
+          else
+            ...pending.map(
+              (task) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.radio_button_unchecked,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                    title: Text(task.title),
+                    subtitle: Text(task.category),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.check),
+                      onPressed: () {
+                        store.completeTask(task.id);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

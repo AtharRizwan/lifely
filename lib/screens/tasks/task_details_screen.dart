@@ -21,7 +21,7 @@ class TaskDetailsScreen extends StatelessWidget {
         title: 'Task',
         subtitle: 'Details unavailable',
         category: 'General',
-        accent: theme.colorScheme.primary.value,
+        accent: 0xFF5B8E7D,
         scheduledAt: DateTime.now(),
         estimatedMinutes: 45,
         isCompleted: false,

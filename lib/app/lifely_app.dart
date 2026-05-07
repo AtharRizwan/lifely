@@ -57,8 +57,7 @@ class _LifelyAppState extends State<LifelyApp> {
                         onLogout: _store.logout,
                       )
                     : AuthFlow(
-                        onAuthenticated: (name, email) =>
-                            _store.login(name: name, email: email),
+                        onAuthenticated: (_, _) {},
                       ),
           );
         },

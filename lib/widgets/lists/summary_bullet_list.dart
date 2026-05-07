@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_scope.dart';
+import '../../models/app_models.dart';
 import '../../utils/snackbar.dart';
 
 class SummaryBulletList extends StatelessWidget {
@@ -12,7 +14,7 @@ class SummaryBulletList extends StatelessWidget {
     final theme = Theme.of(context);
     if (bullets.isEmpty) {
       return Text(
-        'Generate a summary to see 3-5 bullets here.',
+        'Paste notes above and tap Summarize to generate bullets.',
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
         ),
@@ -28,8 +30,20 @@ class SummaryBulletList extends StatelessWidget {
                 child: ListTile(
                   title: Text(bullet, style: theme.textTheme.bodyMedium),
                   trailing: const Icon(Icons.add_circle_outline),
-                  onTap: () =>
-                      showSnackBar(context, 'Task created from bullet.'),
+                  onTap: () {
+                    final store = AppScope.of(context);
+                    store.addTask(TaskItem(
+                      id: 'task-${DateTime.now().millisecondsSinceEpoch}-${bullet.hashCode}',
+                      title: bullet,
+                      subtitle: 'From notes - Today',
+                      category: 'Academics',
+                      accent: 0xFF5B8E7D,
+                      scheduledAt: DateTime.now(),
+                      estimatedMinutes: 30,
+                      isCompleted: false,
+                    ));
+                    showSnackBar(context, 'Task created: $bullet');
+                  },
                 ),
               ),
             ),

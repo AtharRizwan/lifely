@@ -64,13 +64,15 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const SettingsTile(title: 'Membership', value: 'Student plan'),
-          const SettingsTile(title: 'Focus streak', value: '12 days'),
-          const SettingsTile(title: 'Daily recap', value: '9:00 PM'),
+          SettingsTile(title: 'Membership', value: 'Student plan'),
+          SettingsTile(title: 'Focus streak', value: '${store.taskStreak} days'),
+          SettingsTile(title: 'Mood streak', value: '${store.moodStreak} days'),
           const SizedBox(height: 16),
-          const InsightCard(
+          InsightCard(
             title: 'Next checkpoint',
-            body: 'Consistency compounds. Keep a light rhythm today.',
+            body: store.tasks.isEmpty
+                ? 'Add your first task to get started.'
+                : '${store.pendingTasks} tasks pending. Keep the rhythm going.',
           ),
           const SizedBox(height: 18),
           OutlinedButton(
@@ -85,7 +87,10 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 10),
           PrimaryButton(
             label: 'Log out',
-            onPressed: onLogout,
+            onPressed: () {
+              onLogout();
+              Navigator.of(context).pop();
+            },
             useDefaultOnPressed: false,
           ),
         ],

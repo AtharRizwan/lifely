@@ -6,8 +6,8 @@ class AppScope extends InheritedNotifier<AppStore> {
   const AppScope({
     super.key,
     required AppStore store,
-    required Widget child,
-  }) : super(notifier: store, child: child);
+    required super.child,
+  }) : super(notifier: store);
 
   static AppStore of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
