@@ -52,8 +52,23 @@ class _LoginScreenState extends State<LoginScreen> {
       case AuthResult.wrongPassword:
         setState(() => _errorMessage = 'Incorrect password. Try again.');
         break;
-      case AuthResult.emailTaken:
+      case AuthResult.invalidEmail:
+        setState(() => _errorMessage = 'Invalid email format.');
         break;
+      case AuthResult.invalidInput:
+        setState(() => _errorMessage = 'Please enter email and password.');
+        break;
+      case AuthResult.userDisabled:
+        setState(() => _errorMessage = 'Account disabled. Contact support.');
+        break;
+      case AuthResult.tooManyRequests:
+        setState(() => _errorMessage = 'Too many attempts. Try later.');
+        break;
+      case AuthResult.failure:
+        setState(() => _errorMessage = 'Something went wrong. Try again.');
+        break;
+      default:
+        setState(() => _errorMessage = 'An error occurred.');
     }
   }
 

@@ -1,4 +1,7 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+
+import '../../utils/constants.dart';
 
 class ChartCard extends StatelessWidget {
   const ChartCard({
@@ -6,17 +9,21 @@ class ChartCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.bars,
+    this.barColor,
   });
 
   final String title;
   final String subtitle;
   final List<int> bars;
+  final Color? barColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final maxValue = bars.isEmpty ? 1 : bars.reduce((a, b) => a > b ? a : b);
     final safeMax = maxValue == 0 ? 1 : maxValue;
+    final color = barColor ?? AppColors.primary;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -31,27 +38,76 @@ class ChartCard extends StatelessWidget {
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(bars.length, (index) {
-                final value = bars[index];
-                final height = maxValue == 0
-                    ? 4.0
-                    : (80 * (value / safeMax)).clamp(4.0, 80.0);
-                return Expanded(
-                  child: Container(
-                    height: height,
-                    margin: EdgeInsets.only(
-                      right: index == bars.length - 1 ? 0 : 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 120,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: safeMax.toDouble() + 2,
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (_) => theme.colorScheme.surfaceContainerHighest,
+                      tooltipRoundedRadius: 8,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        return BarTooltipItem(
+                          '${bars[groupIndex]}',
+                          theme.textTheme.bodySmall!,
+                        );
+                      },
                     ),
                   ),
-                );
-              }),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                          if (value.toInt() < days.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                days[value.toInt()],
+                                style: theme.textTheme.labelSmall,
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                        reservedSize: 28,
+                      ),
+                    ),
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  gridData: const FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+                  barGroups: List.generate(bars.length, (index) {
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: bars[index].toDouble(),
+                          color: color,
+                          width: 20,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(6),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
             ),
           ],
         ),

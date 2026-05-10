@@ -13,7 +13,13 @@ class DailyRecapScreen extends StatelessWidget {
     final completed = store.tasks.where((task) => task.isCompleted).toList();
     final pending = store.tasks.where((task) => !task.isCompleted).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily recap')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Daily recap'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

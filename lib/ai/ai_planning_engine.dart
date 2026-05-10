@@ -1,4 +1,5 @@
 import '../models/app_models.dart';
+import '../utils/constants.dart';
 
 enum TaskPriority { critical, high, medium, low }
 
@@ -53,47 +54,47 @@ class AiTaskPrioritizer {
 
     final hoursUntilDue = task.scheduledAt.difference(now).inHours;
     if (hoursUntilDue < 0) {
-      score += 50;
+      score += AiScoring.overdueScore;
     } else if (hoursUntilDue < 24) {
-      score += 40;
+      score += AiScoring.within24hScore;
     } else if (hoursUntilDue < 48) {
-      score += 30;
+      score += AiScoring.within48hScore;
     } else if (hoursUntilDue < 72) {
-      score += 20;
+      score += AiScoring.within72hScore;
     } else if (hoursUntilDue < 168) {
-      score += 10;
+      score += AiScoring.withinWeekScore;
     }
 
     for (final keyword in _urgencyPatterns) {
       if (title.contains(keyword) || subtitle.contains(keyword)) {
-        score += 15;
+        score += AiScoring.urgencyKeywordScore;
       }
     }
 
     for (final keyword in _highImpactKeywords) {
       if (title.contains(keyword) || subtitle.contains(keyword)) {
-        score += 10;
+        score += AiScoring.impactKeywordScore;
       }
     }
 
     if (task.estimatedMinutes <= 15) {
-      score += 5;
+      score += AiScoring.quickTaskBonus;
     } else if (task.estimatedMinutes > 120) {
-      score += 3;
+      score += AiScoring.longTaskBonus;
     }
 
     switch (task.category) {
       case 'Academics':
-        score += 5;
+        score += AiScoring.academicsBonus;
         break;
       case 'Admin':
-        score += 3;
+        score += AiScoring.adminBonus;
         break;
       case 'Wellness':
-        score += 2;
+        score += AiScoring.wellnessBonus;
         break;
       case 'Routine':
-        score -= 5;
+        score += AiScoring.routinePenalty;
         break;
     }
 
@@ -101,9 +102,9 @@ class AiTaskPrioritizer {
   }
 
   TaskPriority _classifyPriority(double score) {
-    if (score >= 50) return TaskPriority.critical;
-    if (score >= 30) return TaskPriority.high;
-    if (score >= 15) return TaskPriority.medium;
+    if (score >= AiScoring.criticalThreshold) return TaskPriority.critical;
+    if (score >= AiScoring.highThreshold) return TaskPriority.high;
+    if (score >= AiScoring.mediumThreshold) return TaskPriority.medium;
     return TaskPriority.low;
   }
 
@@ -190,11 +191,12 @@ class AiMoodAdvisor {
 
   MoodAwareSuggestion generate(List<TaskItem> tasks, MoodEntry? latestMood, int pendingCount) {
     final moodLabel = latestMood?.mood ?? 'Steady';
+    final normalizedMood = normalizeMood(moodLabel);
 
-    final adjustedLoad = _computeAdjustedLoad(moodLabel, pendingCount);
-    final message = _generateMessage(moodLabel, pendingCount);
-    final category = _suggestCategory(moodLabel);
-    final tips = _generateTips(moodLabel);
+    final adjustedLoad = _computeAdjustedLoad(normalizedMood, pendingCount);
+    final message = _generateMessage(normalizedMood, pendingCount);
+    final category = _suggestCategory(normalizedMood);
+    final tips = _generateTips(normalizedMood);
 
     return MoodAwareSuggestion(
       message: message,
@@ -207,13 +209,13 @@ class AiMoodAdvisor {
   double _computeAdjustedLoad(String mood, int pendingCount) {
     switch (mood) {
       case 'Focused':
-        return (pendingCount * 1.2).clamp(0.0, 10.0);
+        return (pendingCount * AiScoring.focusedLoadMultiplier).clamp(0.0, 10.0);
       case 'Steady':
-        return pendingCount.toDouble().clamp(0.0, 10.0);
+        return (pendingCount * AiScoring.steadyLoadMultiplier).clamp(0.0, 10.0);
       case 'Stressed':
-        return (pendingCount * 0.5).clamp(0.0, 10.0);
+        return (pendingCount * AiScoring.stressedLoadMultiplier).clamp(0.0, 10.0);
       case 'Low energy':
-        return (pendingCount * 0.3).clamp(0.0, 10.0);
+        return (pendingCount * AiScoring.lowEnergyLoadMultiplier).clamp(0.0, 10.0);
       default:
         return pendingCount.toDouble().clamp(0.0, 10.0);
     }
@@ -261,6 +263,20 @@ class AiMoodAdvisor {
         return _neutralTips.take(3).toList();
     }
   }
+
+  String normalizeMood(String mood) {
+    final lower = mood.toLowerCase();
+    if (lower.contains('focus') || lower.contains('productive') || lower.contains('energ')) {
+      return 'Focused';
+    } else if (lower.contains('stress') || lower.contains('anx') || lower.contains('overwhelm')) {
+      return 'Stressed';
+    } else if (lower.contains('low') || lower.contains('tired') || lower.contains('exhaust')) {
+      return 'Low energy';
+    } else if (lower.contains('happy') || lower.contains('great') || lower.contains('good') || lower.contains('calm')) {
+      return 'Focused';
+    }
+    return 'Steady';
+  }
 }
 
 class ScheduledBlock {
@@ -280,8 +296,8 @@ class ScheduledBlock {
 }
 
 class AiScheduler {
-  static const _peakHours = [9, 10, 11, 14, 15];
-  static const _lowHours = [13, 20, 21, 22];
+  static const _peakHours = [AiScoring.peakHours, AiScoring.peakHoursEnd, AiScoring.afternoonPeakStart, AiScoring.afternoonPeakEnd];
+  static const _lowHours = [AiScoring.lowEnergyHour1, AiScoring.lowEnergyHour2, AiScoring.lowEnergyHour3, AiScoring.lowEnergyHour4];
 
   List<ScheduledBlock> schedule(List<TaskItem> tasks) {
     if (tasks.isEmpty) return [];

@@ -12,7 +12,13 @@ class DayViewScreen extends StatelessWidget {
     final store = AppScope.of(context);
     final blocks = store.plannerBlocks;
     return Scaffold(
-      appBar: AppBar(title: const Text('Day view')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Day view'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: blocks.isEmpty

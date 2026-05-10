@@ -1,3 +1,5 @@
+import '../utils/constants.dart';
+
 class AiSummaryResult {
   const AiSummaryResult({
     required this.keyPoints,
@@ -332,9 +334,9 @@ class AiNotesSummarizer {
       parts.add('${deadlines.length} deadlines detected.');
     }
 
-    if (sentiment > 0.6) {
+    if (sentiment > AiScoring.sentimentPositiveThreshold / 100) {
       parts.add('Overall tone is positive.');
-    } else if (sentiment < 0.4) {
+    } else if (sentiment < AiScoring.sentimentNegativeThreshold / 100) {
       parts.add('Consider lighter tasks given the challenging tone.');
     } else {
       parts.add('Content is balanced and manageable.');

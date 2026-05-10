@@ -18,12 +18,12 @@ class LifelySliverAppBar extends StatelessWidget {
     return SliverAppBar(
       floating: true,
       pinned: false,
-      toolbarHeight: 80,
-      collapsedHeight: 80,
+      toolbarHeight: 88,
+      collapsedHeight: 88,
       expandedHeight: 120,
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.pin,
-        titlePadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        titlePadding: const EdgeInsets.fromLTRB(20, 0, 12, 12),
         expandedTitleScale: 1.15,
         title: DefaultTextStyle(
           style: theme.textTheme.titleLarge ?? const TextStyle(),

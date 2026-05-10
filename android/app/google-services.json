@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "757504080864",
+    "project_id": "lifely-dfe39",
+    "storage_bucket": "lifely-dfe39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757504080864:android:6e170e455d990de7830985",
+        "android_client_info": {
+          "package_name": "com.example.lifely"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4hlDPWwYKsQr6gx6B78gD87kdH6dpPH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

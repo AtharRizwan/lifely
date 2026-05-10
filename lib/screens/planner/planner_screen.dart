@@ -4,6 +4,8 @@ import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
 import '../../utils/navigation.dart';
+import '../../utils/snackbar.dart';
+import '../../utils/constants.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../../widgets/buttons/theme_toggle_button.dart';
 import '../../widgets/cards/week_overview_card.dart';
@@ -27,6 +29,20 @@ class PlannerScreen extends StatefulWidget {
 
 class _PlannerScreenState extends State<PlannerScreen> {
   int _selectedDay = DateTime.now().weekday;
+  DateTime get _selectedDate {
+    final now = DateTime.now();
+    final currentWeekday = now.weekday;
+    return now.add(Duration(days: _selectedDay - currentWeekday));
+  }
+
+  List<TaskItem> get _tasksForSelectedDay {
+    final store = AppScope.of(context);
+    return store.tasks.where((task) {
+      return task.scheduledAt.year == _selectedDate.year &&
+          task.scheduledAt.month == _selectedDate.month &&
+          task.scheduledAt.day == _selectedDate.day;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +78,24 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 onDaySelected: (day) => setState(() => _selectedDay = day),
               ),
               const SizedBox(height: 18),
+              if (_tasksForSelectedDay.isNotEmpty) ...[
+                SectionHeader(
+                  title: 'Tasks for ${dayName.substring(0, 3)}',
+                  action: '${_tasksForSelectedDay.length}',
+                  onActionTap: () {},
+                ),
+                const SizedBox(height: 10),
+                ..._tasksForSelectedDay.map((task) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TimelineEntry(
+                    time: '${task.scheduledAt.hour}:${task.scheduledAt.minute.toString().padLeft(2, '0')}',
+                    title: task.title,
+                    detail: task.category,
+                    accent: Color(task.accent),
+                  ),
+                )),
+                const SizedBox(height: 18),
+              ],
               if (scheduleBlocks.isNotEmpty) ...[
                 SectionHeader(
                   title: 'AI Schedule',
@@ -88,8 +122,19 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 )
               else
                 ...allBlocks.map(
-                  (block) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                  (block) => Dismissible(
+                    key: Key(block.id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 16),
+                      color: theme.colorScheme.error,
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    onDismissed: (_) {
+                      store.removePlannerBlock(block.id);
+                      showSnackBar(context, 'Block removed.');
+                    },
                     child: TimelineEntry(
                       time: block.timeLabel,
                       title: block.title,
@@ -144,14 +189,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: isPeak
-                        ? const Color(0xFF4CAF50).withValues(alpha: 0.15)
-                        : const Color(0xFFFFB74D).withValues(alpha: 0.15),
+                        ? AppColors.success.withValues(alpha: 0.15)
+                        : AppColors.warning.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     block.energyLevel,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: isPeak ? const Color(0xFF4CAF50) : const Color(0xFFFFB74D),
+                      color: isPeak ? AppColors.success : AppColors.warning,
                     ),
                   ),
                 ),
@@ -209,7 +254,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
       timeLabel: '${block.startHour}:00',
       title: block.taskTitle,
       detail: '${block.energyLevel} — ${block.reason}',
-      accent: block.energyLevel == 'High focus' ? 0xFF5B8E7D : 0xFFFFB74D.toInt(),
+      accent: block.energyLevel == 'High focus' ? 0xFF5B8E7D : 0xFFFFB74D,
     );
   }
 }

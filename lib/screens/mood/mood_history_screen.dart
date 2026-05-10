@@ -11,7 +11,13 @@ class MoodHistoryScreen extends StatelessWidget {
     final store = AppScope.of(context);
     final moods = store.moods;
     return Scaffold(
-      appBar: AppBar(title: const Text('Mood history')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Mood history'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: moods.isEmpty

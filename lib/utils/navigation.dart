@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../screens/add/add_task_screen.dart';
 import '../screens/add/ocr_help_screen.dart';
 import '../screens/insights/insights_screen.dart';
 import '../screens/insights/streak_details_screen.dart';
@@ -66,6 +67,16 @@ void openMoodHistory(BuildContext context) {
 
 void openStreakDetails(BuildContext context) {
   Navigator.of(context).push(_buildRoute(const StreakDetailsScreen()));
+}
+
+void openAddTask(BuildContext context, {String? extractedText}) {
+  Navigator.of(context).push(_buildRoute(AddTaskScreen(
+    extractedText: extractedText,
+    themeMode: Theme.of(context).brightness == Brightness.dark
+        ? ThemeMode.dark
+        : ThemeMode.light,
+    onThemeModeChanged: (_) {},
+  )));
 }
 
 void openOcrHelp(BuildContext context) {

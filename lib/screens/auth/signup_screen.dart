@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
@@ -46,13 +47,26 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isSubmitting = false);
     switch (result) {
       case AuthResult.success:
+        debugPrint('SignupScreen: success, calling onSignup');
         widget.onSignup();
         break;
       case AuthResult.emailTaken:
         setState(() => _errorMessage = 'An account with this email already exists.');
         break;
-      default:
+      case AuthResult.invalidEmail:
+        setState(() => _errorMessage = 'Invalid email format.');
         break;
+      case AuthResult.weakPassword:
+        setState(() => _errorMessage = 'Password too weak. Use 6+ characters.');
+        break;
+      case AuthResult.invalidInput:
+        setState(() => _errorMessage = 'Please fill in all fields.');
+        break;
+      case AuthResult.failure:
+        setState(() => _errorMessage = 'Something went wrong. Try again.');
+        break;
+      default:
+        setState(() => _errorMessage = 'An error occurred.');
     }
   }
 

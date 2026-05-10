@@ -4,6 +4,7 @@ import '../ai/ai_planning_engine.dart';
 import '../data/app_scope.dart';
 import '../utils/navigation.dart';
 import '../utils/time.dart';
+import '../utils/constants.dart';
 import '../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../widgets/buttons/theme_toggle_button.dart';
 import '../widgets/cards/gradient_hero_card.dart';
@@ -28,13 +29,13 @@ class DashboardScreen extends StatelessWidget {
   Color _priorityColor(TaskPriority p) {
     switch (p) {
       case TaskPriority.critical:
-        return const Color(0xFFE57373);
+        return AppColors.priorityCriticalColor;
       case TaskPriority.high:
-        return const Color(0xFFD8A15C);
+        return AppColors.priorityHighColor;
       case TaskPriority.medium:
-        return const Color(0xFF5B8E7D);
+        return AppColors.priorityMediumColor;
       case TaskPriority.low:
-        return const Color(0xFF6C8A7B);
+        return AppColors.priorityLowColor;
     }
   }
 

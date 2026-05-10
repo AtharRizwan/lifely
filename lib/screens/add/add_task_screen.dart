@@ -5,6 +5,7 @@ import '../../data/app_scope.dart';
 import '../../data/app_store.dart';
 import '../../models/app_models.dart';
 import '../../utils/navigation.dart';
+import '../../utils/ocr_service.dart';
 import '../../utils/snackbar.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../../widgets/buttons/primary_button.dart';
@@ -12,7 +13,6 @@ import '../../widgets/buttons/theme_toggle_button.dart';
 import '../../widgets/cards/capture_card.dart';
 import '../../widgets/cards/insight_card.dart';
 import '../../widgets/inputs/category_chip.dart';
-import '../../widgets/tiles/scan_picker_tile.dart';
 import '../../widgets/tiles/section_header.dart';
 
 class AddTaskScreen extends StatefulWidget {
@@ -20,10 +20,12 @@ class AddTaskScreen extends StatefulWidget {
     super.key,
     required this.themeMode,
     required this.onThemeModeChanged,
+    this.extractedText,
   });
 
   final ThemeMode themeMode;
   final ValueChanged<bool> onThemeModeChanged;
+  final String? extractedText;
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -36,6 +38,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   AiSummaryResult? _aiResult;
   String? _extractedText;
   final List<String> _createdTasks = [];
+  final OcrService _ocrService = OcrService.instance;
+  final _aiSummarizer = AiNotesSummarizer();
 
   late final AnimationController _scaleController;
   late final Animation<double> _scaleAnimation;
@@ -52,6 +56,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       curve: Curves.elasticOut,
     );
     _scaleController.forward();
+    if (widget.extractedText != null) {
+      _extractedText = widget.extractedText;
+    }
   }
 
   void _toggleCategory(String label) {
@@ -64,12 +71,34 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
     });
   }
 
-  void _simulateScan(String source) {
-    setState(() {
-      _extractedText =
-          'Neuro midterm notes: revise chapter 5, complete lab outline, schedule TA hours.';
-    });
-    showSnackBar(context, '$source captured. Text extracted.');
+  Future<void> _captureFromCamera() async {
+    try {
+      showSnackBar(context, 'Processing image...');
+      final result = await _ocrService.extractTextFromCamera();
+      if (result.isSuccess && mounted) {
+        setState(() => _extractedText = result.text);
+        showSnackBar(context, 'Text extracted successfully.');
+      } else if (mounted) {
+        showSnackBar(context, result.errorMessage);
+      }
+    } catch (e) {
+      if (mounted) showSnackBar(context, 'Camera unavailable. Please try again.');
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      showSnackBar(context, 'Processing image...');
+      final result = await _ocrService.extractTextFromGallery();
+      if (result.isSuccess && mounted) {
+        setState(() => _extractedText = result.text);
+        showSnackBar(context, 'Text extracted successfully.');
+      } else if (mounted) {
+        showSnackBar(context, result.errorMessage);
+      }
+    } catch (e) {
+      if (mounted) showSnackBar(context, 'Could not open gallery. Please try again.');
+    }
   }
 
   void _convertExtractedToTasks() {
@@ -120,8 +149,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
     showSnackBar(context, 'AI analysis complete.');
   }
 
-  final _aiSummarizer = AiNotesSummarizer();
-
   void _applyRewrite() {
     final text = _taskController.text.trim();
     if (text.isEmpty) {
@@ -133,20 +160,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       _taskController.text = suggestion;
     });
     showSnackBar(context, 'Rewrite applied to quick add.');
-  }
-
-  void _openScanGallery() {
-    _showScanPicker(
-      context,
-      onSelect: (text) {
-        setState(() {
-          _extractedText = text;
-        });
-      },
-    );
-  }
-
-
+}
 
   @override
   void dispose() {
@@ -371,11 +385,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
               isDark: widget.themeMode == ThemeMode.dark,
               onChanged: widget.onThemeModeChanged,
             ),
-            IconButton(
-              icon: const Icon(Icons.mic_none_rounded),
-              onPressed: () =>
-                  showSnackBar(context, 'Voice input is coming soon.'),
-            ),
           ],
         ),
         SliverPadding(
@@ -403,8 +412,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
               const SizedBox(height: 10),
               CaptureCard(
                 extractedText: _extractedText,
-                onCapture: () => _simulateScan('Camera'),
-                onScan: _openScanGallery,
+                onCapture: _captureFromCamera,
+                onScan: _pickFromGallery,
                 onConvert: _convertExtractedToTasks,
               ),
               const SizedBox(height: 18),
@@ -552,39 +561,4 @@ extension on _AddTaskScreenState {
     _taskController.clear();
     showSnackBar(context, 'Task added.');
   }
-}
-
-void _showScanPicker(
-  BuildContext context, {
-  required ValueChanged<String> onSelect,
-}) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (sheetContext) {
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Recent scans',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              ScanPickerTile(
-                title: 'No recent scans',
-                subtitle: 'Capture your first image to see it here.',
-                onSelect: () {
-                  Navigator.of(sheetContext).pop();
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
 }

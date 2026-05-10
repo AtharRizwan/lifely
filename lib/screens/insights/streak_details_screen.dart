@@ -10,7 +10,13 @@ class StreakDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Streak details')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Streak details'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

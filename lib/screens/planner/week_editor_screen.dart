@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
+import '../../utils/constants.dart';
 import '../../utils/snackbar.dart';
 import '../../widgets/cards/action_card.dart';
 
@@ -12,7 +13,13 @@ class WeekEditorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit week')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Edit week'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -24,10 +31,10 @@ class WeekEditorScreen extends StatelessWidget {
               store.addPlannerBlock(
                 PlannerBlock(
                   id: 'plan-${DateTime.now().millisecondsSinceEpoch}',
-                  timeLabel: '5:30',
+                  timeLabel: AppStrings.defaultFocusTime,
                   title: 'Deep work block',
-                  detail: 'Library focus',
-                  accent: 0xFF5B8E7D,
+                  detail: AppStrings.libraryDetail,
+                  accent: AppStrings.defaultFocusAccent,
                 ),
               );
               showSnackBar(context, 'Blocks updated.');

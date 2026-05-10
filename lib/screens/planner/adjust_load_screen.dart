@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
+import '../../utils/constants.dart';
 import '../../utils/snackbar.dart';
 import '../../widgets/cards/action_card.dart';
 
@@ -18,7 +19,13 @@ class AdjustLoadScreen extends StatelessWidget {
     final suggestion = moodAdvisor.generate(store.tasks, latestMood, store.pendingTasks);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Adjust load')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Adjust load'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -107,10 +114,10 @@ class AdjustLoadScreen extends StatelessWidget {
               store.addPlannerBlock(
                 PlannerBlock(
                   id: 'plan-${DateTime.now().millisecondsSinceEpoch}',
-                  timeLabel: '3:30',
+                  timeLabel: AppStrings.defaultDeepWorkTime,
                   title: 'Focus block',
-                  detail: '90 min deep work',
-                  accent: 0xFF5B8E7D,
+                  detail: AppStrings.deepWorkDetail,
+                  accent: AppStrings.defaultFocusAccent,
                 ),
               );
               showSnackBar(context, 'Focus block added.');

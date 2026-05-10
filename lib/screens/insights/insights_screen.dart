@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
 import '../../data/app_store.dart';
+import '../../utils/constants.dart';
 import '../../widgets/cards/achievement_grid.dart';
 import '../../widgets/cards/progress_tracker_card.dart';
 import '../../widgets/charts/chart_card.dart';
@@ -20,7 +21,13 @@ class InsightsScreen extends StatelessWidget {
     final prioritized = pending.isNotEmpty ? prioritizer.prioritize(store.tasks) : [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Insights')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Insights'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -74,9 +81,9 @@ class InsightsScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    _buildEnergyRow('Peak focus', scheduler.peakHours.map((h) => '$h:00').toList(), const Color(0xFF4CAF50), theme),
+                    _buildEnergyRow('Peak focus', scheduler.peakHours.map((h) => '$h:00').toList(), AppColors.success, theme),
                     const SizedBox(height: 8),
-                    _buildEnergyRow('Low energy', scheduler.lowHours.map((h) => '$h:00').toList(), const Color(0xFFFFB74D), theme),
+                    _buildEnergyRow('Low energy', scheduler.lowHours.map((h) => '$h:00').toList(), AppColors.warning, theme),
                   ],
                 ),
               ),
@@ -182,13 +189,13 @@ class InsightsScreen extends StatelessWidget {
   Color _priorityColor(TaskPriority p) {
     switch (p) {
       case TaskPriority.critical:
-        return const Color(0xFFE57373);
+        return AppColors.priorityCriticalColor;
       case TaskPriority.high:
-        return const Color(0xFFD8A15C);
+        return AppColors.priorityHighColor;
       case TaskPriority.medium:
-        return const Color(0xFF5B8E7D);
+        return AppColors.priorityMediumColor;
       case TaskPriority.low:
-        return const Color(0xFF6C8A7B);
+        return AppColors.priorityLowColor;
     }
   }
 

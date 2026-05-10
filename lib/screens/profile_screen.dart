@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../data/app_scope.dart';
-import '../widgets/buttons/primary_button.dart';
-import '../widgets/cards/insight_card.dart';
-import '../widgets/tiles/settings_tile.dart';
+import '../../data/app_scope.dart';
+import '../../widgets/tiles/settings_tile.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.onLogout});
@@ -15,8 +13,20 @@ class ProfileScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final store = AppScope.of(context);
     final profile = store.profile;
+    
+    final joinedDate = profile?.joinedAt;
+    final memberSince = joinedDate != null
+        ? '${joinedDate.day}/${joinedDate.month}/${joinedDate.year}'
+        : 'Today';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Profile'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -26,7 +36,7 @@ class ProfileScreen extends StatelessWidget {
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 26,
+                    radius: 32,
                     backgroundColor: theme.colorScheme.primary,
                     child: Text(
                       profile?.name.isNotEmpty == true
@@ -35,6 +45,7 @@ class ProfileScreen extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
+                        fontSize: 24,
                       ),
                     ),
                   ),
@@ -63,35 +74,129 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          SettingsTile(title: 'Membership', value: 'Student plan'),
-          SettingsTile(title: 'Focus streak', value: '${store.taskStreak} days'),
-          SettingsTile(title: 'Mood streak', value: '${store.moodStreak} days'),
-          const SizedBox(height: 16),
-          InsightCard(
-            title: 'Next checkpoint',
-            body: store.tasks.isEmpty
-                ? 'Add your first task to get started.'
-                : '${store.pendingTasks} tasks pending. Keep the rhythm going.',
+          const SizedBox(height: 24),
+          Text('Your progress', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  icon: Icons.check_circle_outline,
+                  label: 'Completed',
+                  value: '${store.completedTasks}',
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  icon: Icons.pending_outlined,
+                  label: 'Pending',
+                  value: '${store.pendingTasks}',
+                  color: Colors.orange,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 18),
-          OutlinedButton(
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  icon: Icons.local_fire_department_outlined,
+                  label: 'Task streak',
+                  value: '${store.taskStreak} days',
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  icon: Icons.favorite_outline,
+                  label: 'Mood streak',
+                  value: '${store.moodStreak} days',
+                  color: Colors.pink,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text('Account info', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          SettingsTile(title: 'Member since', value: memberSince),
+          SettingsTile(
+            title: 'Tasks completed',
+            value: '${store.completedTasks}',
+          ),
+          SettingsTile(
+            title: 'Planner blocks',
+            value: '${store.plannerBlocks.length}',
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
             onPressed: () {
-              store.clearLocalData();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Local data cleared.')),
-              );
+              _showLogoutDialog(context, store);
             },
-            child: const Text('Clear local data'),
+            icon: const Icon(Icons.logout),
+            label: const Text('Log out'),
           ),
-          const SizedBox(height: 10),
-          PrimaryButton(
-            label: 'Log out',
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, dynamic store) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text('You will need to sign in again to access your data.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
             onPressed: () {
-              onLogout();
               Navigator.of(context).pop();
+              Navigator.of(context).pop();
+              store.logout();
             },
-            useDefaultOnPressed: false,
+            child: const Text('Log out'),
           ),
         ],
       ),

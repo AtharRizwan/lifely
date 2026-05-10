@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/app_scope.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/splash_screen.dart';
@@ -53,12 +54,20 @@ class _AuthFlowState extends State<AuthFlow> {
         return const SplashScreen();
       case AuthStage.login:
         return LoginScreen(
-          onLogin: () => widget.onAuthenticated('', ''),
+          onLogin: () {
+            final store = AppScope.of(context);
+            final profile = store.profile;
+            widget.onAuthenticated(profile?.name ?? '', profile?.email ?? '');
+          },
           onSignupTap: _showSignup,
         );
       case AuthStage.signup:
         return SignupScreen(
-          onSignup: () => widget.onAuthenticated('', ''),
+          onSignup: () {
+            final store = AppScope.of(context);
+            final profile = store.profile;
+            widget.onAuthenticated(profile?.name ?? '', profile?.email ?? '');
+          },
           onLoginTap: _showLogin,
         );
     }

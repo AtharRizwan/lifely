@@ -13,7 +13,13 @@ class AllTasksScreen extends StatelessWidget {
     final store = AppScope.of(context);
     final tasks = store.tasks;
     return Scaffold(
-      appBar: AppBar(title: const Text('All tasks')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('All tasks'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
