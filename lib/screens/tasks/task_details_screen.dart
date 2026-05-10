@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
-import '../../utils/snackbar.dart';
 import '../../widgets/buttons/primary_button.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -65,7 +64,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
     store.updateTask(updated);
     setState(() => _isEditing = false);
-    showSnackBar(context, 'Task updated.');
   }
 
   void _cancelEditing() {
@@ -231,10 +229,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             label: task.isCompleted ? 'Completed' : 'Mark complete',
             onPressed: task.isCompleted
                 ? null
-                : () {
-                    store.completeTask(task.id);
-                    showSnackBar(context, 'Task marked complete.');
-                  },
+                : () => store.completeTask(task.id),
           ),
           const SizedBox(height: 10),
           OutlinedButton(
@@ -243,7 +238,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 task.id,
                 task.scheduledAt.add(const Duration(days: 1)),
               );
-              showSnackBar(context, 'Task rescheduled for tomorrow.');
             },
             child: const Text('Reschedule'),
           ),

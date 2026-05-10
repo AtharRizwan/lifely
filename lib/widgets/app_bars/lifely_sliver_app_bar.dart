@@ -17,13 +17,13 @@ class LifelySliverAppBar extends StatelessWidget {
     final theme = Theme.of(context);
     return SliverAppBar(
       floating: true,
-      pinned: false,
-      toolbarHeight: 88,
-      collapsedHeight: 88,
-      expandedHeight: 120,
+      pinned: true,
+      toolbarHeight: 90,
+      collapsedHeight: 90,
+      expandedHeight: 128,
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.pin,
-        titlePadding: const EdgeInsets.fromLTRB(20, 0, 12, 12),
+        titlePadding: const EdgeInsets.fromLTRB(20, 0, 60, 12),
         expandedTitleScale: 1.15,
         title: DefaultTextStyle(
           style: theme.textTheme.titleLarge ?? const TextStyle(),
@@ -31,8 +31,8 @@ class LifelySliverAppBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 4),
+              Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
                 maxLines: 1,
@@ -51,7 +51,7 @@ class LifelySliverAppBar extends StatelessWidget {
           .map(
             (entry) => Padding(
               padding: EdgeInsets.only(
-                right: entry.key == actions.length - 1 ? 12 : 4,
+                right: entry.key == actions.length - 1 ? 16 : 4,
               ),
               child: entry.value,
             ),

@@ -46,8 +46,6 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
     );
     store.addMood(entry);
     _noteController.clear();
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Mood saved.')));
   }
 
   @override

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
 import '../../utils/constants.dart';
-import '../../utils/snackbar.dart';
 import '../../widgets/cards/action_card.dart';
 
 class WeekEditorScreen extends StatelessWidget {
@@ -37,7 +36,6 @@ class WeekEditorScreen extends StatelessWidget {
                   accent: AppStrings.defaultFocusAccent,
                 ),
               );
-              showSnackBar(context, 'Blocks updated.');
             },
           ),
           const SizedBox(height: 12),
@@ -58,7 +56,6 @@ class WeekEditorScreen extends StatelessWidget {
                   isCompleted: false,
                 ),
               );
-              showSnackBar(context, 'Recurring tasks added.');
             },
           ),
         ],

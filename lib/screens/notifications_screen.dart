@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../data/app_scope.dart';
-import '../utils/snackbar.dart';
 import '../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../widgets/buttons/theme_toggle_button.dart';
 import '../widgets/tiles/notification_tile.dart';
@@ -71,12 +70,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             IconButton(
               icon: const Icon(Icons.tune_rounded),
               onPressed: () {
-                if (notifications.isEmpty) {
-                  showSnackBar(context, 'No notifications to clear.');
-                  return;
-                }
+                if (notifications.isEmpty) return;
                 store.clearNotifications();
-                showSnackBar(context, 'Notifications cleared.');
               },
             ),
           ],

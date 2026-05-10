@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../utils/snackbar.dart';
-
 class SimpleListTile extends StatelessWidget {
   const SimpleListTile({
     super.key,
@@ -29,7 +27,7 @@ class SimpleListTile extends StatelessWidget {
           ),
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-        onTap: () => showSnackBar(context, 'Opened $title.'),
+        onTap: () {},
       ),
     );
   }

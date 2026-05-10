@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
-import '../../utils/snackbar.dart';
 
 class SummaryBulletList extends StatelessWidget {
   const SummaryBulletList({super.key, required this.bullets});
@@ -42,7 +41,6 @@ class SummaryBulletList extends StatelessWidget {
                       estimatedMinutes: 30,
                       isCompleted: false,
                     ));
-                    showSnackBar(context, 'Task created: $bullet');
                   },
                 ),
               ),

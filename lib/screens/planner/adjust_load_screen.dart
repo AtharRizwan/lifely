@@ -102,7 +102,6 @@ class AdjustLoadScreen extends StatelessWidget {
                 task.id,
                 task.scheduledAt.add(const Duration(days: 1)),
               );
-              showSnackBar(context, 'Task moved to tomorrow.');
             },
           ),
           const SizedBox(height: 12),
@@ -120,7 +119,6 @@ class AdjustLoadScreen extends StatelessWidget {
                   accent: AppStrings.defaultFocusAccent,
                 ),
               );
-              showSnackBar(context, 'Focus block added.');
             },
           ),
           const SizedBox(height: 12),
@@ -138,7 +136,6 @@ class AdjustLoadScreen extends StatelessWidget {
                   isUnread: true,
                 ),
               );
-              showSnackBar(context, 'Quiet mode enabled.');
             },
           ),
           const SizedBox(height: 16),

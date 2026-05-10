@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
-import '../../utils/snackbar.dart';
 import '../widgets/tiles/settings_tile.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -112,9 +111,7 @@ class SettingsScreen extends StatelessWidget {
                   leading: const Icon(Icons.info_outline),
                   title: const Text('Help & Support'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    showSnackBar(context, 'Help center coming soon.');
-                  },
+                  onTap: () {},
                 ),
               ],
             ),
@@ -166,7 +163,6 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).pop();
               store.clearLocalData();
-              showSnackBar(context, 'All data cleared.');
             },
             child: Text(
               'Clear',

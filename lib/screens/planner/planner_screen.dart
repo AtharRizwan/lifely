@@ -236,12 +236,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
         action: SnackBarAction(
           label: 'Add',
           onPressed: () {
-            store.addPlannerBlock(
-              _createPlannerBlock(block),
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Block added to planner.')),
-            );
+            store.addPlannerBlock(_createPlannerBlock(block));
           },
         ),
       ),

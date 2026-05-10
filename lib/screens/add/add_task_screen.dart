@@ -77,7 +77,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       final result = await _ocrService.extractTextFromCamera();
       if (result.isSuccess && mounted) {
         setState(() => _extractedText = result.text);
-        showSnackBar(context, 'Text extracted successfully.');
       } else if (mounted) {
         showSnackBar(context, result.errorMessage);
       }
@@ -92,7 +91,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       final result = await _ocrService.extractTextFromGallery();
       if (result.isSuccess && mounted) {
         setState(() => _extractedText = result.text);
-        showSnackBar(context, 'Text extracted successfully.');
       } else if (mounted) {
         showSnackBar(context, result.errorMessage);
       }
@@ -102,10 +100,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   }
 
   void _convertExtractedToTasks() {
-    if (_extractedText == null) {
-      showSnackBar(context, 'Scan notes or capture an image first.');
-      return;
-    }
+    if (_extractedText == null) return;
     final store = AppScope.of(context);
     final aiResult = _aiSummarizer.summarize(_extractedText!);
     final created = <String>[];
@@ -133,33 +128,24 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
         ..clear()
         ..addAll(created);
     });
-    showSnackBar(context, 'Created ${created.length} tasks from scan.');
   }
 
   void _summarizeNotes() {
     final text = _notesController.text.trim();
-    if (text.isEmpty) {
-      showSnackBar(context, 'Paste some notes first.');
-      return;
-    }
+    if (text.isEmpty) return;
     final result = _aiSummarizer.summarize(text);
     setState(() {
       _aiResult = result;
     });
-    showSnackBar(context, 'AI analysis complete.');
   }
 
   void _applyRewrite() {
     final text = _taskController.text.trim();
-    if (text.isEmpty) {
-      showSnackBar(context, 'Add a draft task first.');
-      return;
-    }
+    if (text.isEmpty) return;
     final suggestion = '${text[0].toUpperCase()}${text.substring(1)}';
     setState(() {
       _taskController.text = suggestion;
     });
-    showSnackBar(context, 'Rewrite applied to quick add.');
 }
 
   @override
@@ -369,7 +355,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       estimatedMinutes: 30,
       isCompleted: false,
     ));
-    showSnackBar(context, 'Task added: $trimmed');
   }
 
   @override
@@ -542,10 +527,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
 extension on _AddTaskScreenState {
   void _addTask(AppStore store) {
     final text = _taskController.text.trim();
-    if (text.isEmpty) {
-      showSnackBar(context, 'Enter a task first.');
-      return;
-    }
+    if (text.isEmpty) return;
     final task = TaskItem(
       id: 'task-${DateTime.now().millisecondsSinceEpoch}',
       title: text,
@@ -559,6 +541,5 @@ extension on _AddTaskScreenState {
     );
     store.addTask(task);
     _taskController.clear();
-    showSnackBar(context, 'Task added.');
   }
 }
