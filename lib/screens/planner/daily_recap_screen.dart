@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
+import '../../utils/time.dart';
 import '../../widgets/cards/recap_card.dart';
 
 class DailyRecapScreen extends StatelessWidget {
@@ -10,8 +11,9 @@ class DailyRecapScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final store = AppScope.of(context);
-    final completed = store.tasks.where((task) => task.isCompleted).toList();
-    final pending = store.tasks.where((task) => !task.isCompleted).toList();
+    final now = DateTime.now();
+    final completed = store.completedOn(now);
+    final pending = store.pendingDueBy(now);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -29,11 +31,11 @@ class DailyRecapScreen extends StatelessWidget {
             mood: store.latestMoodLabel,
           ),
           const SizedBox(height: 12),
-          Text('Finished tasks', style: theme.textTheme.titleMedium),
+          Text('Finished today', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           if (completed.isEmpty)
             Text(
-              'No tasks completed yet.',
+              'Nothing finished yet today.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -56,11 +58,11 @@ class DailyRecapScreen extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 16),
-          Text('Pending tasks', style: theme.textTheme.titleMedium),
+          Text('Still due today', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           if (pending.isEmpty)
             Text(
-              'Nothing pending right now.',
+              'Nothing left for today.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -77,8 +79,13 @@ class DailyRecapScreen extends StatelessWidget {
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                     ),
                     title: Text(task.title),
-                    subtitle: Text(task.category),
+                    subtitle: Text(
+                      task.isOverdue(now) && !isSameDay(task.scheduledAt, now)
+                          ? '${task.category} · overdue since ${formatShortDate(task.scheduledAt)}'
+                          : '${task.category} · ${formatClock(task.scheduledAt)}',
+                    ),
                     trailing: IconButton(
+                      tooltip: 'Mark complete',
                       icon: const Icon(Icons.check),
                       onPressed: () {
                         store.completeTask(task.id);

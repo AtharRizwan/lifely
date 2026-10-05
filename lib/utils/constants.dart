@@ -38,6 +38,25 @@ class AppColors {
   static Color get priorityHighColor => const Color(priorityHigh);
   static Color get priorityMediumColor => const Color(priorityMedium);
   static Color get priorityLowColor => const Color(priorityLow);
+
+  static int categoryAccent(String category) {
+    switch (category) {
+      case 'Academics':
+        return primaryGreen;
+      case 'Group work':
+        return accentPurple;
+      case 'Admin':
+        return accentOrange;
+      case 'Wellness':
+        return accentPink;
+      case 'Social':
+        return slateBlue;
+      default:
+        return neutralSlate;
+    }
+  }
+
+  static Color forCategory(String category) => Color(categoryAccent(category));
 }
 
 class AppDurations {
@@ -73,6 +92,7 @@ class AppStrings {
   static const String appName = 'Lifely';
   static const String defaultUserName = 'Student';
   static const String defaultEmail = 'student@lifely.app';
+  static const String appVersion = '1.0.0';
 
   static const List<String> categories = [
     'Academics',
@@ -92,10 +112,7 @@ class AppStrings {
 
   static const List<int> taskDurations = [15, 30, 45, 60, 90, 120];
 
-  static const String defaultFocusTime = '15:00';
-  static const String defaultDeepWorkTime = '15:30';
   static const String deepWorkDetail = '90 min deep work';
-  static const String libraryDetail = 'Library focus';
   static const int defaultFocusAccent = 0xFF5B8E7D;
 }
 
@@ -132,6 +149,12 @@ class AiScoring {
   static const double steadyLoadMultiplier = 1.0;
   static const double stressedLoadMultiplier = 0.5;
   static const double lowEnergyLoadMultiplier = 0.3;
+
+  // Upper bound on scheduled minutes per day, by mood.
+  static const int focusedDailyMinutes = 360;
+  static const int steadyDailyMinutes = 300;
+  static const int stressedDailyMinutes = 180;
+  static const int lowEnergyDailyMinutes = 120;
 
   static const int peakHours = 9;
   static const int peakHoursEnd = 11;

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
 import '../../data/app_store.dart';
+import '../../models/app_models.dart';
 import '../../utils/constants.dart';
+import '../../utils/time.dart';
 import '../../widgets/cards/achievement_grid.dart';
 import '../../widgets/cards/progress_tracker_card.dart';
 import '../../widgets/charts/chart_card.dart';
@@ -18,7 +20,14 @@ class InsightsScreen extends StatelessWidget {
     final scheduler = AiScheduler();
     final prioritizer = AiTaskPrioritizer();
     final pending = store.tasks.where((t) => !t.isCompleted).toList();
-    final prioritized = pending.isNotEmpty ? prioritizer.prioritize(store.tasks) : [];
+    final prioritized = pending.isNotEmpty
+        ? prioritizer.prioritize(store.tasks)
+        : const <PrioritizedTask>[];
+    final today = dateOnly(DateTime.now());
+    final lastWeek = [for (var i = 6; i >= 0; i--) addDays(today, -i)];
+    final dayLabels = [
+      for (final day in lastWeek) weekdayShortNames[day.weekday - 1].substring(0, 2),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -40,7 +49,7 @@ class InsightsScreen extends StatelessWidget {
             achievements: [
               'Mood streak - ${store.moodStreak} days',
               'Tasks completed - ${store.completedTasks}',
-              'Planner blocks - ${store.plannerBlocks.length}',
+              'Planner streak - ${store.plannerStreak} days',
             ],
           ),
           const SizedBox(height: 16),
@@ -56,15 +65,18 @@ class InsightsScreen extends StatelessWidget {
             )
           else ...[
             ChartCard(
-              title: 'Task streaks',
+              title: 'Tasks completed',
               subtitle: 'Last 7 days',
-              bars: _buildTaskBars(store.tasks),
+              bars: _buildTaskBars(store.tasks, lastWeek),
+              labels: dayLabels,
             ),
             const SizedBox(height: 16),
             ChartCard(
-              title: 'Load balance',
-              subtitle: 'Focus vs. admin',
-              bars: _buildBalanceBars(store.pendingTasks, store.completedTasks),
+              title: 'Mood',
+              subtitle: 'Last 7 days · 4 focused, 3 steady, 2 low energy, 1 stressed',
+              bars: _buildMoodBars(store.moods, lastWeek),
+              labels: dayLabels,
+              barColor: AppColors.pink,
             ),
             const SizedBox(height: 16),
             Card(
@@ -212,28 +224,44 @@ class InsightsScreen extends StatelessWidget {
     }
   }
 
-  List<int> _buildTaskBars(List<dynamic> tasks) {
-    if (tasks.isEmpty) {
-      return List<int>.filled(7, 0);
-    }
-    final counts = <int, int>{};
-    for (final task in tasks) {
-      final day = task.scheduledAt.weekday;
-      counts[day] = (counts[day] ?? 0) + (task.isCompleted ? 1 : 0);
-    }
-    return List.generate(7, (i) {
-      final day = i + 1;
-      return (counts[day] ?? 0).clamp(0, 7);
-    });
+  /// Tasks completed on each day in [days].
+  List<int> _buildTaskBars(List<TaskItem> tasks, List<DateTime> days) {
+    return [
+      for (final day in days)
+        tasks
+            .where((task) =>
+                task.isCompleted &&
+                isSameDay(task.completedAt ?? task.scheduledAt, day))
+            .length,
+    ];
   }
 
-  List<int> _buildBalanceBars(int pending, int completed) {
-    final total = pending + completed;
-    if (total == 0) {
-      return List<int>.filled(7, 0);
+  /// The latest mood logged on each day in [days], scored 1-4 (0 = none).
+  List<int> _buildMoodBars(List<MoodEntry> moods, List<DateTime> days) {
+    final advisor = AiMoodAdvisor();
+    int score(String mood) {
+      switch (advisor.normalizeMood(mood)) {
+        case 'Focused':
+          return 4;
+        case 'Steady':
+          return 3;
+        case 'Low energy':
+          return 2;
+        case 'Stressed':
+          return 1;
+        default:
+          return 0;
+      }
     }
-    final balance = (completed / total * 7).clamp(1, 7).round();
-    return List<int>.filled(7, balance);
+
+    return [
+      for (final day in days)
+        // Moods are kept newest first, so the first match is the day's latest.
+        moods
+            .where((entry) => isSameDay(entry.loggedAt, day))
+            .map((entry) => score(entry.mood))
+            .firstOrNull ?? 0,
+    ];
   }
 
   List<String> _buildAchievements(AppStore store) {
@@ -244,7 +272,9 @@ class InsightsScreen extends StatelessWidget {
     if (store.completedTasks >= 3) {
       achievements.add('Completed ${store.completedTasks} tasks');
     }
-    if (store.plannerBlocks.isNotEmpty) {
+    if (store.plannerStreak >= 3) {
+      achievements.add('Planned ${store.plannerStreak} days in a row');
+    } else if (store.plannerBlocks.isNotEmpty) {
       achievements.add('Planner blocks added');
     }
     if (achievements.isEmpty) {

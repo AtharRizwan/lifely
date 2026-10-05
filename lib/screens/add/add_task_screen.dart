@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../../ai/ai_notes_summarizer.dart';
+import '../../ai/ai_quick_add.dart';
 import '../../data/app_scope.dart';
 import '../../data/app_store.dart';
 import '../../models/app_models.dart';
+import '../../utils/constants.dart';
 import '../../utils/navigation.dart';
 import '../../utils/ocr_service.dart';
 import '../../utils/snackbar.dart';
+import '../../utils/time.dart';
+import '../../utils/validators.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/buttons/theme_toggle_button.dart';
 import '../../widgets/cards/capture_card.dart';
 import '../../widgets/cards/insight_card.dart';
 import '../../widgets/inputs/category_chip.dart';
+import '../../widgets/inputs/date_time_field.dart';
 import '../../widgets/tiles/section_header.dart';
 
 class AddTaskScreen extends StatefulWidget {
@@ -32,7 +37,9 @@ class AddTaskScreen extends StatefulWidget {
 }
 
 class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProviderStateMixin {
-  final Set<String> _selectedCategories = {'Academics'};
+  static const _parser = QuickAddParser();
+  static const _rewriter = TaskRewriter();
+
   final TextEditingController _taskController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   AiSummaryResult? _aiResult;
@@ -41,12 +48,24 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   final OcrService _ocrService = OcrService.instance;
   final _aiSummarizer = AiNotesSummarizer();
 
+  // Values detected from the text fill these until the user sets them by hand.
+  QuickAddResult? _parsed;
+  String _category = 'Academics';
+  late DateTime _due;
+  int _minutes = 45;
+  bool _dueTouched = false;
+  bool _minutesTouched = false;
+  bool _categoryTouched = false;
+  String? _titleError;
+  String? _lastAdded;
+
   late final AnimationController _scaleController;
   late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    _due = _defaultDue(DateTime.now());
     _scaleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -61,14 +80,32 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
     }
   }
 
-  void _toggleCategory(String label) {
+  DateTime _defaultDue(DateTime now) =>
+      DateTime(now.year, now.month, now.day, now.hour + 1);
+
+  void _onTaskTextChanged(String text) {
+    final now = DateTime.now();
+    final parsed = text.trim().isEmpty ? null : _parser.parse(text, now);
     setState(() {
-      if (_selectedCategories.contains(label)) {
-        _selectedCategories.remove(label);
-      } else {
-        _selectedCategories.add(label);
+      _parsed = parsed;
+      _titleError = null;
+      _lastAdded = null;
+      if (!_dueTouched) _due = parsed?.due ?? _defaultDue(now);
+      if (!_minutesTouched) _minutes = parsed?.minutes ?? 45;
+      if (!_categoryTouched && parsed?.category != null) {
+        _category = parsed!.category!;
       }
     });
+  }
+
+  void _resetComposer() {
+    _taskController.clear();
+    _parsed = null;
+    _dueTouched = false;
+    _minutesTouched = false;
+    _categoryTouched = false;
+    _due = _defaultDue(DateTime.now());
+    _minutes = 45;
   }
 
   Future<void> _captureFromCamera() async {
@@ -99,6 +136,26 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
     }
   }
 
+  /// Builds a task from a line of scanned or summarised text, using any date,
+  /// duration or category found in it.
+  TaskItem _taskFromLine(String line, String idSuffix, {required String source}) {
+    final now = DateTime.now();
+    final parsed = _parser.parse(line, now);
+    final text = parsed.title.isEmpty ? line.trim() : parsed.title;
+    final title = text.length > 60 ? '${text.substring(0, 57)}...' : text;
+    final category = parsed.category ?? _category;
+    return TaskItem(
+      id: 'task-${now.millisecondsSinceEpoch}-$idSuffix',
+      title: title,
+      subtitle: source,
+      category: category,
+      accent: AppColors.categoryAccent(category),
+      scheduledAt: parsed.due ?? _defaultDue(now),
+      estimatedMinutes: parsed.minutes ?? 30,
+      isCompleted: false,
+    );
+  }
+
   void _convertExtractedToTasks() {
     if (_extractedText == null) return;
     final store = AppScope.of(context);
@@ -110,17 +167,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       ...aiResult.keyPoints,
     ];
     for (final line in bulletsToAdd.take(5)) {
-      final task = TaskItem(
-        id: 'task-${DateTime.now().millisecondsSinceEpoch}-${created.length}',
-        title: line.length > 60 ? '${line.substring(0, 57)}...' : line,
-        subtitle: 'From scan - Today',
-        category: 'Academics',
-        accent: 0xFF5B8E7D,
-        scheduledAt: DateTime.now(),
-        estimatedMinutes: 30,
-        isCompleted: false,
-      );
-      store.addTask(task);
+      store.addTask(_taskFromLine(line, '${created.length}', source: 'From scan'));
       created.add(line);
     }
     setState(() {
@@ -142,11 +189,17 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   void _applyRewrite() {
     final text = _taskController.text.trim();
     if (text.isEmpty) return;
-    final suggestion = '${text[0].toUpperCase()}${text.substring(1)}';
+    final rewritten = _rewriter.rewrite(text, DateTime.now());
     setState(() {
-      _taskController.text = suggestion;
+      // The rewrite drops date and duration words, so keep what was detected.
+      final parsed = _parsed;
+      if (parsed?.due != null) _dueTouched = true;
+      if (parsed?.minutes != null) _minutesTouched = true;
+      if (parsed?.category != null) _categoryTouched = true;
+      _taskController.text = rewritten;
+      _parsed = _parser.parse(rewritten, DateTime.now());
     });
-}
+  }
 
   @override
   void dispose() {
@@ -262,73 +315,63 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
               const SizedBox(height: 12),
               Text('Deadlines', style: theme.textTheme.titleSmall),
               const SizedBox(height: 6),
-              ...result.deadlines.map((d) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              ...result.deadlines.map((d) => _summaryRow(
+                    d,
                     Icon(Icons.event, size: 16, color: theme.colorScheme.error),
-                    const SizedBox(width: 6),
-                    Flexible(child: Text(d, style: theme.textTheme.bodySmall)),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 16),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _addTaskFromBullet(d),
-                    ),
-                  ],
-                ),
-              )),
+                  )),
             ],
             if (result.keyPoints.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text('Key points', style: theme.textTheme.titleSmall),
               const SizedBox(height: 6),
-              ...result.keyPoints.map((p) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              ...result.keyPoints.map((p) => _summaryRow(
+                    p,
                     Icon(Icons.lightbulb_outline, size: 16, color: theme.colorScheme.primary),
-                    const SizedBox(width: 6),
-                    Flexible(child: Text(p, style: theme.textTheme.bodySmall)),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 16),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _addTaskFromBullet(p),
-                    ),
-                  ],
-                ),
-              )),
+                  )),
             ],
             if (result.actionItems.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text('Action items', style: theme.textTheme.titleSmall),
               const SizedBox(height: 6),
-              ...result.actionItems.map((a) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.checklist, size: 16, color: const Color(0xFFD8A15C)),
-                    const SizedBox(width: 6),
-                    Flexible(child: Text(a, style: theme.textTheme.bodySmall)),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 16),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _addTaskFromBullet(a),
-                    ),
-                  ],
-                ),
-              )),
+              ...result.actionItems.map((a) => _summaryRow(
+                    a,
+                    const Icon(Icons.checklist, size: 16, color: Color(0xFFD8A15C)),
+                  )),
             ],
           ],
         ),
       ),
     );
   }
+
+  Widget _summaryRow(String text, Widget icon) {
+    final theme = Theme.of(context);
+    final added = _addedBullets.contains(text);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          icon,
+          const SizedBox(width: 6),
+          Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
+          IconButton(
+            tooltip: added ? 'Added as a task' : 'Add as a task',
+            icon: Icon(
+              added ? Icons.check_circle : Icons.add_circle_outline,
+              size: 18,
+              color: added ? theme.colorScheme.primary : null,
+            ),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: added ? null : () => _addTaskFromBullet(text),
+          ),
+        ],
+      ),
+    );
+  }
+
+  final Set<String> _addedBullets = {};
 
   Color _getSentimentColor(double score) {
     if (score > 0.6) return const Color(0xFF4CAF50);
@@ -344,27 +387,80 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
 
   void _addTaskFromBullet(String text) {
     final store = AppScope.of(context);
-    final trimmed = text.length > 60 ? '${text.substring(0, 57)}...' : text;
-    store.addTask(TaskItem(
-      id: 'task-${DateTime.now().millisecondsSinceEpoch}-${text.hashCode}',
-      title: trimmed,
-      subtitle: 'From AI summary - Today',
-      category: _selectedCategories.isEmpty ? 'General' : _selectedCategories.first,
-      accent: 0xFF5B8E7D,
-      scheduledAt: DateTime.now(),
-      estimatedMinutes: 30,
+    store.addTask(_taskFromLine(text, '${text.hashCode}', source: 'From AI summary'));
+    setState(() => _addedBullets.add(text));
+  }
+
+  void _addTask(AppStore store) {
+    final text = _taskController.text.trim();
+    if (text.isEmpty) {
+      setState(() => _titleError = 'Describe the task first.');
+      return;
+    }
+    final parsed = _parser.parse(text, DateTime.now());
+    final title = parsed.title.isEmpty ? text : parsed.title;
+    final validation = Validators.validateTaskTitle(title);
+    if (validation.isInvalid) {
+      setState(() => _titleError = validation.errorMessage);
+      return;
+    }
+    final task = TaskItem(
+      id: 'task-${DateTime.now().millisecondsSinceEpoch}',
+      title: '${title[0].toUpperCase()}${title.substring(1)}',
+      subtitle: '',
+      category: _category,
+      accent: AppColors.categoryAccent(_category),
+      scheduledAt: _due,
+      estimatedMinutes: _minutes,
       isCompleted: false,
-    ));
+    );
+    store.addTask(task);
+    setState(() {
+      _lastAdded = 'Added "${task.title}" · ${formatDueLabel(task.scheduledAt, DateTime.now())}';
+      _titleError = null;
+      _resetComposer();
+    });
+  }
+
+  Widget _buildDetectedChip(ThemeData theme) {
+    final parsed = _parsed;
+    if (parsed == null || !parsed.hasDetections) return const SizedBox.shrink();
+    final parts = <String>[
+      if (parsed.due != null) formatDueLabel(parsed.due!, DateTime.now()),
+      if (parsed.minutes != null) '${parsed.minutes} min',
+      if (parsed.category != null) parsed.category!,
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Detected: ${parts.join(' · ')}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final store = AppScope.of(context);
+    final draft = _taskController.text.trim();
+    final rewritten = draft.isEmpty ? '' : _rewriter.rewrite(draft, DateTime.now());
+    final durations = {...AppStrings.taskDurations, _minutes}.toList()..sort();
     final scrollView = CustomScrollView(
       slivers: [
         LifelySliverAppBar(
           title: 'Quick add',
-          subtitle: 'Type or speak naturally',
+          subtitle: 'Type naturally, like "essay tomorrow 3pm"',
           actions: [
             ThemeToggleButton(
               isDark: widget.themeMode == ThemeMode.dark,
@@ -379,16 +475,97 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
               TextField(
                 controller: _taskController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: '“Add a task in your own words”',
+                minLines: 1,
+                textCapitalization: TextCapitalization.sentences,
+                onChanged: _onTaskTextChanged,
+                decoration: InputDecoration(
+                  hintText: '“Read chapter 4 by friday for 1h”',
+                  errorText: _titleError,
                 ),
               ),
+              _buildDetectedChip(theme),
               const SizedBox(height: 16),
-              PrimaryButton(
-                label: 'Add task now',
-                onPressed: () => _addTask(store),
+              DateTimeField(
+                label: 'Due',
+                value: _due,
+                onChanged: (value) => setState(() {
+                  _due = value;
+                  _dueTouched = true;
+                }),
               ),
               const SizedBox(height: 16),
+              Text('Time needed', style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: durations
+                    .map((minutes) => CategoryChip(
+                          label: '$minutes min',
+                          selected: _minutes == minutes,
+                          onTap: () => setState(() {
+                            _minutes = minutes;
+                            _minutesTouched = true;
+                          }),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+              Text('Category', style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: AppStrings.categories
+                    .map((category) => CategoryChip(
+                          label: category,
+                          selected: _category == category,
+                          onTap: () => setState(() {
+                            _category = category;
+                            _categoryTouched = true;
+                          }),
+                        ))
+                    .toList(),
+              ),
+              if (_lastAdded != null) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(_lastAdded!, style: theme.textTheme.bodySmall),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 20),
+              SectionHeader(
+                title: 'AI rewrite',
+                action: rewritten.isNotEmpty && rewritten != draft ? 'Apply' : null,
+                onActionTap: _applyRewrite,
+              ),
+              const SizedBox(height: 10),
+              if (draft.isEmpty)
+                Text(
+                  'Write a draft task to see a suggested rewrite.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                )
+              else if (rewritten == draft)
+                Text(
+                  'Your title already reads clearly.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                )
+              else
+                InsightCard(
+                  title: rewritten,
+                  body: 'Tap Apply to use this shorter title. The detected date and time are kept.',
+                ),
+              const SizedBox(height: 18),
               SectionHeader(
                 title: 'Quick add from camera or scans',
                 action: 'Learn more',
@@ -422,57 +599,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
               ),
               const SizedBox(height: 12),
               _buildAiSummaryResults(),
-              const SizedBox(height: 18),
-              SectionHeader(
-                title: 'AI rewrite',
-                action: 'Apply',
-                onActionTap: _applyRewrite,
-              ),
-              const SizedBox(height: 10),
-              if (_taskController.text.trim().isEmpty)
-                Text(
-                  'Write a draft task to see a suggested rewrite.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color:
-                            Theme.of(context).colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                      ),
-                )
-              else
-                InsightCard(
-                  title: _taskController.text.trim(),
-                  body: 'Tap Apply to rewrite for clarity.',
-                ),
-              const SizedBox(height: 16),
-              const SectionHeader(title: 'Quick categories'),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  CategoryChip(
-                    label: 'Academics',
-                    selected: _selectedCategories.contains('Academics'),
-                    onTap: () => _toggleCategory('Academics'),
-                  ),
-                  CategoryChip(
-                    label: 'Group work',
-                    selected: _selectedCategories.contains('Group work'),
-                    onTap: () => _toggleCategory('Group work'),
-                  ),
-                  CategoryChip(
-                    label: 'Admin',
-                    selected: _selectedCategories.contains('Admin'),
-                    onTap: () => _toggleCategory('Admin'),
-                  ),
-                  CategoryChip(
-                    label: 'Wellness',
-                    selected: _selectedCategories.contains('Wellness'),
-                    onTap: () => _toggleCategory('Wellness'),
-                  ),
-                ],
-              ),
               const SizedBox(height: 24),
               if (_createdTasks.isNotEmpty)
                 Column(
@@ -480,7 +606,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                   children: [
                     Text(
                       'Created from scan',
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: theme.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
                     ..._createdTasks.map(
@@ -507,7 +633,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
             color: widget.themeMode == ThemeMode.dark ? const Color(0xFF0D0F14) : Colors.white,
             border: Border(
               top: BorderSide(
-                color: Theme.of(context).dividerTheme.color ?? Colors.transparent,
+                color: theme.dividerTheme.color ?? Colors.transparent,
               ),
             ),
           ),
@@ -521,25 +647,5 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
         ),
       ],
     );
-  }
-}
-
-extension on _AddTaskScreenState {
-  void _addTask(AppStore store) {
-    final text = _taskController.text.trim();
-    if (text.isEmpty) return;
-    final task = TaskItem(
-      id: 'task-${DateTime.now().millisecondsSinceEpoch}',
-      title: text,
-      subtitle: 'Quick add - Today',
-      category:
-          _selectedCategories.isEmpty ? 'General' : _selectedCategories.first,
-      accent: 0xFF5B8E7D,
-      scheduledAt: DateTime.now(),
-      estimatedMinutes: 45,
-      isCompleted: false,
-    );
-    store.addTask(task);
-    _taskController.clear();
   }
 }

@@ -56,7 +56,7 @@ class OcrService {
       if (image == null) {
         return const OcrResult(text: null, error: OcrError.cameraUnavailable);
       }
-      return _processImage(File(image.path));
+      return await _processImage(File(image.path));
     } catch (e) {
       if (e.toString().contains('permission') || e.toString().contains('Camera')) {
         return const OcrResult(text: null, error: OcrError.cameraUnavailable);
@@ -75,7 +75,7 @@ class OcrService {
       if (image == null) {
         return const OcrResult(text: null, error: OcrError.galleryUnavailable);
       }
-      return _processImage(File(image.path));
+      return await _processImage(File(image.path));
     } catch (e) {
       return const OcrResult(text: null, error: OcrError.galleryUnavailable);
     }

@@ -35,7 +35,7 @@ class Validators {
     if (value == null || value.trim().isEmpty) {
       return const ValidationResult.invalid('Email is required.');
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$');
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]{2,}$');
     if (!emailRegex.hasMatch(value.trim())) {
       return const ValidationResult.invalid('Please enter a valid email.');
     }
@@ -65,9 +65,10 @@ class Validators {
     if (value.trim().length > 50) {
       return const ValidationResult.invalid('Name must be less than 50 characters.');
     }
-    final nameRegex = RegExp(r'^[a-zA-Z\s\-\.]+$');
+    // Letters from any script, plus spaces, apostrophes, dots and hyphens.
+    final nameRegex = RegExp(r"^[\p{L}\p{M}\s.'\-]+$", unicode: true);
     if (!nameRegex.hasMatch(value.trim())) {
-      return const ValidationResult.invalid('Name can only contain letters, spaces, and hyphens.');
+      return const ValidationResult.invalid('Name can only contain letters, spaces, apostrophes and hyphens.');
     }
     return const ValidationResult.valid();
   }

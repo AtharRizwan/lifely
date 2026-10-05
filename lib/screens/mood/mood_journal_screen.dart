@@ -4,6 +4,7 @@ import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
 import '../../models/app_models.dart';
 import '../../utils/navigation.dart';
+import '../../utils/time.dart';
 import '../../widgets/app_bars/lifely_sliver_app_bar.dart';
 import '../../widgets/buttons/theme_toggle_button.dart';
 import '../../widgets/cards/metric_tile.dart';
@@ -27,10 +28,12 @@ class MoodJournalScreen extends StatefulWidget {
 class _MoodJournalScreenState extends State<MoodJournalScreen> {
   String _selectedMood = 'Steady';
   final TextEditingController _noteController = TextEditingController();
+  MoodEntry? _justLogged;
 
   void _selectMood(String mood) {
     setState(() {
       _selectedMood = mood;
+      _justLogged = null;
     });
   }
 
@@ -46,6 +49,7 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
     );
     store.addMood(entry);
     _noteController.clear();
+    setState(() => _justLogged = entry);
   }
 
   @override
@@ -57,9 +61,8 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final latestMood = store.moods.isNotEmpty ? store.moods.first : null;
     final moodAdvisor = AiMoodAdvisor();
-    final suggestion = moodAdvisor.generate(store.tasks, latestMood, store.pendingTasks);
+    final suggestion = moodAdvisor.generate(store.tasks, store.latestMood, store.pendingTasks);
     return CustomScrollView(
       slivers: [
         LifelySliverAppBar(
@@ -128,6 +131,25 @@ class _MoodJournalScreenState extends State<MoodJournalScreen> {
                   child: const Text('Save mood'),
                 ),
               ),
+              if (_justLogged != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '"${_justLogged!.mood}" logged at ${formatClock(_justLogged!.loggedAt)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 20),
               SectionHeader(
                 title: 'AI Suggestion',

@@ -16,4 +16,13 @@ class AppScope extends InheritedNotifier<AppStore> {
     }
     return scope.notifier!;
   }
+
+  /// Like [of] but without subscribing to changes, for use in callbacks.
+  static AppStore read(BuildContext context) {
+    final scope = context.getInheritedWidgetOfExactType<AppScope>();
+    if (scope == null) {
+      throw FlutterError('AppScope not found in widget tree.');
+    }
+    return scope.notifier!;
+  }
 }

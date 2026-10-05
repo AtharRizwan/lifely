@@ -2,21 +2,69 @@ import 'package:flutter/material.dart';
 
 import '../../ai/ai_planning_engine.dart';
 import '../../data/app_scope.dart';
-import '../../models/app_models.dart';
+import '../../data/app_store.dart';
 import '../../utils/constants.dart';
-import '../../utils/snackbar.dart';
+import '../../utils/time.dart';
 import '../../widgets/cards/action_card.dart';
+import '../../widgets/sheets/planner_block_sheet.dart';
 
-class AdjustLoadScreen extends StatelessWidget {
+class AdjustLoadScreen extends StatefulWidget {
   const AdjustLoadScreen({super.key});
+
+  @override
+  State<AdjustLoadScreen> createState() => _AdjustLoadScreenState();
+}
+
+class _AdjustLoadScreenState extends State<AdjustLoadScreen> {
+  String? _moveStatus;
+
+  Future<void> _moveOneTask(AppStore store) async {
+    final now = DateTime.now();
+    final dueToday = store.tasksOn(now).where((task) => !task.isCompleted).toList();
+    final prioritized = AiTaskPrioritizer().prioritize(dueToday);
+    if (prioritized.isEmpty) {
+      setState(() => _moveStatus = 'Nothing pending today to move.');
+      return;
+    }
+    // prioritize() puts the most urgent first, so the last is the least.
+    final task = prioritized.last.task;
+    final original = task.scheduledAt;
+    final tomorrow = addDays(original, 1);
+    final messenger = ScaffoldMessenger.of(context);
+    await store.rescheduleTask(task.id, tomorrow);
+    if (!mounted) return;
+    setState(() => _moveStatus = 'Moved "${task.title}" to ${formatDueLabel(tomorrow, now)}.');
+    messenger.showSnackBar(SnackBar(
+      content: Text('Moved "${task.title}" to tomorrow'),
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () {
+          store.rescheduleTask(task.id, original);
+          if (mounted) setState(() => _moveStatus = null);
+        },
+      ),
+    ));
+  }
+
+  Future<void> _addFocusBlock(AppStore store) async {
+    final start = AiScheduler().nextPeakSlot(DateTime.now(), store.plannerBlocks);
+    final block = await showPlannerBlockSheet(
+      context,
+      start: start,
+      durationMinutes: 90,
+      title: 'Focus block',
+      detail: AppStrings.deepWorkDetail,
+    );
+    if (block != null) await store.addPlannerBlock(block);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final store = AppScope.of(context);
-    final latestMood = store.moods.isNotEmpty ? store.moods.first : null;
     final moodAdvisor = AiMoodAdvisor();
-    final suggestion = moodAdvisor.generate(store.tasks, latestMood, store.pendingTasks);
+    final suggestion = moodAdvisor.generate(store.tasks, store.latestMood, store.pendingTasks);
+    final quietUntil = store.quietUntil;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,68 +124,32 @@ class AdjustLoadScreen extends StatelessWidget {
           const SizedBox(height: 16),
           ActionCard(
             title: 'Move one task',
-            subtitle: 'Shift a low-priority task to tomorrow.',
+            subtitle: _moveStatus ?? "Shift today's least urgent task to tomorrow.",
             actionLabel: 'Reschedule',
-            onAction: () {
-              final task = store.tasks.firstWhere(
-                (task) => !task.isCompleted,
-                orElse: () => store.tasks.isNotEmpty
-                    ? store.tasks.first
-                    : TaskItem(
-                        id: 'none',
-                        title: 'Task',
-                        subtitle: 'No tasks available',
-                        category: 'General',
-                        accent: 0xFF6C8A7B,
-                        scheduledAt: DateTime.now(),
-                        estimatedMinutes: 30,
-                        isCompleted: false,
-                      ),
-              );
-              if (task.id == 'none') {
-                showSnackBar(context, 'No tasks to reschedule.');
-                return;
-              }
-              store.rescheduleTask(
-                task.id,
-                task.scheduledAt.add(const Duration(days: 1)),
-              );
-            },
+            onAction: () => _moveOneTask(store),
           ),
           const SizedBox(height: 12),
           ActionCard(
             title: 'Create a focus block',
-            subtitle: 'Reserve 90 minutes for deep work.',
+            subtitle: 'Reserve 90 minutes in your next free peak-focus slot.',
             actionLabel: 'Add block',
-            onAction: () {
-              store.addPlannerBlock(
-                PlannerBlock(
-                  id: 'plan-${DateTime.now().millisecondsSinceEpoch}',
-                  timeLabel: AppStrings.defaultDeepWorkTime,
-                  title: 'Focus block',
-                  detail: AppStrings.deepWorkDetail,
-                  accent: AppStrings.defaultFocusAccent,
-                ),
-              );
-            },
+            onAction: () => _addFocusBlock(store),
           ),
           const SizedBox(height: 12),
-          ActionCard(
-            title: 'Quiet notifications',
-            subtitle: 'Mute alerts for the next 2 hours.',
-            actionLabel: 'Enable',
-            onAction: () {
-              store.addNotification(
-                NotificationItem(
-                  id: 'note-${DateTime.now().millisecondsSinceEpoch}',
-                  title: 'Quiet mode enabled',
-                  body: 'Notifications muted for 2 hours.',
-                  timestamp: DateTime.now(),
-                  isUnread: true,
-                ),
-              );
-            },
-          ),
+          if (quietUntil != null)
+            ActionCard(
+              title: 'Quiet mode is on',
+              subtitle: 'New reminders are paused until ${formatClock(quietUntil)}.',
+              actionLabel: 'Turn off',
+              onAction: store.clearQuiet,
+            )
+          else
+            ActionCard(
+              title: 'Quiet notifications',
+              subtitle: 'Pause new reminders for the next 2 hours.',
+              actionLabel: 'Enable',
+              onAction: () => store.setQuietFor(const Duration(hours: 2)),
+            ),
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 16),
@@ -148,7 +160,7 @@ class AdjustLoadScreen extends StatelessWidget {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                leading: Icon(_categoryIcon(cat), color: _categoryColor(cat)),
+                leading: Icon(_categoryIcon(cat), color: AppColors.forCategory(cat)),
                 title: Text(cat),
                 subtitle: Text(scheduler.suggestBestTime(cat)),
               ),
@@ -171,21 +183,6 @@ class AdjustLoadScreen extends StatelessWidget {
         return Icons.people_outline;
       default:
         return Icons.task_outlined;
-    }
-  }
-
-  Color _categoryColor(String cat) {
-    switch (cat) {
-      case 'Academics':
-        return const Color(0xFF5B8E7D);
-      case 'Wellness':
-        return const Color(0xFFE57373);
-      case 'Admin':
-        return const Color(0xFFD8A15C);
-      case 'Social':
-        return const Color(0xFF7986CB);
-      default:
-        return const Color(0xFF6C8A7B);
     }
   }
 }

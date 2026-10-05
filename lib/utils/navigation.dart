@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_scope.dart';
 import '../screens/add/add_task_screen.dart';
 import '../screens/add/ocr_help_screen.dart';
 import '../screens/insights/insights_screen.dart';
@@ -12,6 +13,7 @@ import '../screens/planner/week_editor_screen.dart';
 import '../screens/tasks/all_tasks_screen.dart';
 import '../screens/tasks/task_details_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/settings_screen.dart';
 
 Route _buildRoute(Widget page) {
   return PageRouteBuilder(
@@ -53,8 +55,8 @@ void openDailyRecap(BuildContext context) {
   Navigator.of(context).push(_buildRoute(const DailyRecapScreen()));
 }
 
-void openDayView(BuildContext context) {
-  Navigator.of(context).push(_buildRoute(const DayViewScreen()));
+void openDayView(BuildContext context, DateTime day) {
+  Navigator.of(context).push(_buildRoute(DayViewScreen(day: day)));
 }
 
 void openWeekEditor(BuildContext context) {
@@ -70,12 +72,20 @@ void openStreakDetails(BuildContext context) {
 }
 
 void openAddTask(BuildContext context, {String? extractedText}) {
-  Navigator.of(context).push(_buildRoute(AddTaskScreen(
-    extractedText: extractedText,
-    themeMode: Theme.of(context).brightness == Brightness.dark
-        ? ThemeMode.dark
-        : ThemeMode.light,
-    onThemeModeChanged: (_) {},
+  // Outside the tab shell the screen needs its own Scaffold (for Material
+  // ancestors), and it reads the theme from the store so the toggle works.
+  Navigator.of(context).push(_buildRoute(Scaffold(
+    body: Builder(
+      builder: (context) {
+        final store = AppScope.of(context);
+        return AddTaskScreen(
+          extractedText: extractedText,
+          themeMode: store.themeMode,
+          onThemeModeChanged: (isDark) =>
+              store.setThemeMode(isDark ? ThemeMode.dark : ThemeMode.light),
+        );
+      },
+    ),
   )));
 }
 
@@ -85,4 +95,8 @@ void openOcrHelp(BuildContext context) {
 
 void openProfile(BuildContext context, VoidCallback onLogout) {
   Navigator.of(context).push(_buildRoute(ProfileScreen(onLogout: onLogout)));
+}
+
+void openSettings(BuildContext context) {
+  Navigator.of(context).push(_buildRoute(const SettingsScreen()));
 }

@@ -13,6 +13,7 @@ import '../widgets/cards/progress_teaser_card.dart';
 import '../widgets/cards/recap_card.dart';
 import '../widgets/cards/task_card.dart';
 import '../widgets/tiles/section_header.dart';
+import '../widgets/ui_state/error_banners.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({
@@ -121,12 +122,19 @@ class DashboardScreen extends StatelessWidget {
     final pending = store.pendingTasks;
 
     final prioritizer = AiTaskPrioritizer();
-    final prioritized = pending > 0 ? prioritizer.prioritize(store.tasks) : [];
+    final prioritized = pending > 0
+        ? prioritizer.prioritize(store.tasks)
+        : const <PrioritizedTask>[];
     final topTasks = prioritized.take(3).toList();
 
     final moodAdvisor = AiMoodAdvisor();
-    final latestMood = store.moods.isNotEmpty ? store.moods.first : null;
-    final moodSuggestion = moodAdvisor.generate(store.tasks, latestMood, pending);
+    final moodSuggestion =
+        moodAdvisor.generate(store.tasks, store.latestMood, pending);
+
+    final now = DateTime.now();
+    final todayTasks = store.tasksOn(now);
+    final doneToday = todayTasks.where((task) => task.isCompleted).length;
+    final overdue = store.tasks.where((task) => task.isOverdue(now)).length;
 
     return CustomScrollView(
       slivers: [
@@ -148,10 +156,30 @@ class DashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
+              if (store.syncError != null) ...[
+                ErrorBanner(
+                  message: store.syncError!,
+                  isDismissible: false,
+                  actionLabel: store.isSyncing ? null : 'Retry',
+                  onAction: store.refresh,
+                ),
+                const SizedBox(height: 14),
+              ],
               GradientHeroCard(
-                title: 'Start with one clear win',
-                body: '${pending + completed} tasks planned today',
-                footer: 'Add tasks to see your recap',
+                title: todayTasks.isEmpty
+                    ? 'A clear day so far'
+                    : doneToday == todayTasks.length
+                        ? 'Everything for today is done'
+                        : 'Start with one clear win',
+                body: todayTasks.length == 1
+                    ? '1 task planned today'
+                    : '${todayTasks.length} tasks planned today',
+                footer: todayTasks.isEmpty
+                    ? (overdue > 0
+                        ? '$overdue overdue from earlier days'
+                        : 'Add a task to plan your day')
+                    : '$doneToday of ${todayTasks.length} done'
+                        '${overdue > 0 ? ' · $overdue overdue' : ''}',
               ),
               const SizedBox(height: 18),
               Row(
@@ -185,10 +213,13 @@ class DashboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: TaskCard(
                     title: pt.task.title,
-                    subtitle: pt.task.subtitle,
+                    subtitle: pt.task.isOverdue(now)
+                        ? 'Overdue · ${formatDueLabel(pt.task.scheduledAt, now)}'
+                        : 'Due ${formatDueLabel(pt.task.scheduledAt, now)}',
                     badge: _priorityLabel(pt.priority),
                     accent: _priorityColor(pt.priority),
                     isCompleted: pt.task.isCompleted,
+                    heroTag: TaskCard.taskHeroTag(pt.task.id),
                     onTap: () => openTaskDetails(context, pt.task.id),
                   ),
                 )),
@@ -209,8 +240,8 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               RecapCard(
-                completed: completed,
-                pending: pending,
+                completed: store.completedOn(now).length,
+                pending: store.pendingDueBy(now).length,
                 mood: store.latestMoodLabel,
               ),
               const SizedBox(height: 20),

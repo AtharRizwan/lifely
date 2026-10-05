@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../data/app_scope.dart';
-import '../../widgets/tiles/settings_tile.dart';
+import '../data/app_scope.dart';
+import '../data/app_store.dart';
+import '../utils/navigation.dart';
+import '../utils/validators.dart';
+import '../widgets/tiles/settings_tile.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.onLogout});
@@ -26,6 +29,13 @@ class ProfileScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Profile'),
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => openSettings(context),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -69,6 +79,11 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Edit name',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _showEditNameDialog(context, store),
                   ),
                 ],
               ),
@@ -179,27 +194,90 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context, dynamic store) {
+  void _showEditNameDialog(BuildContext context, AppStore store) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => _EditNameDialog(
+        initialName: store.profile?.name ?? '',
+        onSave: store.updateProfileName,
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, AppStore store) {
+    final navigator = Navigator.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Log out?'),
         content: const Text('You will need to sign in again to access your data.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-              store.logout();
+              navigator.popUntil((route) => route.isFirst);
+              onLogout();
             },
             child: const Text('Log out'),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EditNameDialog extends StatefulWidget {
+  const _EditNameDialog({required this.initialName, required this.onSave});
+
+  final String initialName;
+  final Future<void> Function(String name) onSave;
+
+  @override
+  State<_EditNameDialog> createState() => _EditNameDialogState();
+}
+
+class _EditNameDialogState extends State<_EditNameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialName);
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final validation = Validators.validateName(_controller.text);
+    if (validation.isInvalid) {
+      setState(() => _error = validation.errorMessage);
+      return;
+    }
+    widget.onSave(_controller.text.trim());
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit name'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        decoration: InputDecoration(labelText: 'Name', errorText: _error),
+        onSubmitted: (_) => _save(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(onPressed: _save, child: const Text('Save')),
+      ],
     );
   }
 }

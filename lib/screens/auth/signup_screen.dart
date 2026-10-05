@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
 import '../../data/app_store.dart';
+import '../../utils/validators.dart';
 import '../../widgets/buttons/primary_button.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -61,6 +62,12 @@ class _SignupScreenState extends State<SignupScreen> {
       case AuthResult.invalidInput:
         setState(() => _errorMessage = 'Please fill in all fields.');
         break;
+      case AuthResult.network:
+        setState(() => _errorMessage = 'No connection. Check your internet and try again.');
+        break;
+      case AuthResult.tooManyRequests:
+        setState(() => _errorMessage = 'Too many attempts. Try again later.');
+        break;
       case AuthResult.failure:
         setState(() => _errorMessage = 'Something went wrong. Try again.');
         break;
@@ -115,12 +122,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 labelText: 'Full name',
                               ),
                               textCapitalization: TextCapitalization.words,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Enter your name.';
-                                }
-                                return null;
-                              },
+                              validator: (value) =>
+                                  Validators.validateName(value).errorMessage,
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
@@ -129,15 +132,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 labelText: 'Email',
                               ),
                               keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Enter your email.';
-                                }
-                                if (!value.contains('@')) {
-                                  return 'Enter a valid email.';
-                                }
-                                return null;
-                              },
+                              validator: (value) =>
+                                  Validators.validateEmail(value).errorMessage,
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
@@ -146,15 +142,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 labelText: 'Password',
                               ),
                               obscureText: true,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Create a password.';
-                                }
-                                if (value.length < 6) {
-                                  return 'Use at least 6 characters.';
-                                }
-                                return null;
-                              },
+                              validator: (value) =>
+                                  Validators.validatePassword(value).errorMessage,
                             ),
                             const SizedBox(height: 18),
                             if (_errorMessage != null) ...[

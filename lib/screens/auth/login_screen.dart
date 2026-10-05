@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
 import '../../data/app_store.dart';
+import '../../utils/validators.dart';
 import '../../widgets/buttons/primary_button.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -52,6 +53,12 @@ class _LoginScreenState extends State<LoginScreen> {
       case AuthResult.wrongPassword:
         setState(() => _errorMessage = 'Incorrect password. Try again.');
         break;
+      case AuthResult.invalidCredentials:
+        setState(() => _errorMessage = 'Email or password is incorrect.');
+        break;
+      case AuthResult.network:
+        setState(() => _errorMessage = 'No connection. Check your internet and try again.');
+        break;
       case AuthResult.invalidEmail:
         setState(() => _errorMessage = 'Invalid email format.');
         break;
@@ -70,6 +77,16 @@ class _LoginScreenState extends State<LoginScreen> {
       default:
         setState(() => _errorMessage = 'An error occurred.');
     }
+  }
+
+  void _showForgotPassword() {
+    showDialog(
+      context: context,
+      builder: (_) => _ForgotPasswordDialog(
+        initialEmail: _emailController.text.trim(),
+        onSend: AppScope.of(context).sendPasswordReset,
+      ),
+    );
   }
 
   @override
@@ -114,15 +131,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 labelText: 'Email',
                               ),
                               keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Enter your email.';
-                                }
-                                if (!value.contains('@')) {
-                                  return 'Enter a valid email.';
-                                }
-                                return null;
-                              },
+                              validator: (value) =>
+                                  Validators.validateEmail(value).errorMessage,
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
@@ -141,7 +151,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 18),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _isSubmitting ? null : _showForgotPassword,
+                                child: const Text('Forgot password?'),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
                             if (_errorMessage != null) ...[
                               Container(
                                 padding: const EdgeInsets.all(10),
@@ -194,6 +211,102 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ForgotPasswordDialog extends StatefulWidget {
+  const _ForgotPasswordDialog({required this.initialEmail, required this.onSend});
+
+  final String initialEmail;
+  final Future<AuthResult> Function(String email) onSend;
+
+  @override
+  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialEmail);
+  bool _sending = false;
+  bool _sent = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final email = _controller.text.trim();
+    final validation = Validators.validateEmail(email);
+    if (validation.isInvalid) {
+      setState(() => _error = validation.errorMessage);
+      return;
+    }
+    setState(() {
+      _sending = true;
+      _error = null;
+    });
+    final result = await widget.onSend(email);
+    if (!mounted) return;
+    setState(() {
+      _sending = false;
+      switch (result) {
+        case AuthResult.success:
+          _sent = true;
+          break;
+        case AuthResult.invalidEmail:
+          _error = 'That email address looks invalid.';
+          break;
+        case AuthResult.network:
+          _error = 'No connection. Try again when you are online.';
+          break;
+        case AuthResult.tooManyRequests:
+          _error = 'Too many attempts. Try again later.';
+          break;
+        default:
+          _error = "Couldn't send the reset link. Try again.";
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_sent) {
+      return AlertDialog(
+        title: const Text('Check your inbox'),
+        content: Text(
+          'If an account exists for ${_controller.text.trim()}, a password reset link is on its way.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Done'),
+          ),
+        ],
+      );
+    }
+    return AlertDialog(
+      title: const Text('Reset password'),
+      content: TextField(
+        controller: _controller,
+        autofocus: widget.initialEmail.isEmpty,
+        keyboardType: TextInputType.emailAddress,
+        decoration: InputDecoration(labelText: 'Email', errorText: _error),
+        onSubmitted: (_) => _sending ? null : _send(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _sending ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: _sending ? null : _send,
+          child: Text(_sending ? 'Sending…' : 'Send link'),
+        ),
+      ],
     );
   }
 }

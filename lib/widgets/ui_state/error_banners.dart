@@ -6,11 +6,15 @@ class ErrorBanner extends StatelessWidget {
     required this.message,
     this.onDismiss,
     this.isDismissible = true,
+    this.actionLabel,
+    this.onAction,
   });
 
   final String message;
   final VoidCallback? onDismiss;
   final bool isDismissible;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +46,12 @@ class ErrorBanner extends StatelessWidget {
               ),
             ),
           ),
+          if (actionLabel != null && onAction != null)
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+              child: Text(actionLabel!),
+            ),
           if (isDismissible && onDismiss != null)
             IconButton(
               icon: Icon(

@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../data/app_scope.dart';
+import '../../data/app_store.dart';
+import '../../models/app_models.dart';
+import '../../utils/time.dart';
 import '../../widgets/tiles/mood_history_tile.dart';
+import '../../widgets/ui_state/error_banners.dart';
 
 class MoodHistoryScreen extends StatelessWidget {
   const MoodHistoryScreen({super.key});
+
+  Future<void> _remove(BuildContext context, AppStore store, MoodEntry entry) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final removed = await store.removeMood(entry.id);
+    if (removed == null) return;
+    messenger.showSnackBar(SnackBar(
+      content: const Text('Mood entry deleted'),
+      action: SnackBarAction(label: 'Undo', onPressed: () => store.addMood(removed)),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final moods = store.moods;
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -18,45 +33,54 @@ class MoodHistoryScreen extends StatelessWidget {
         ),
         title: const Text('Mood history'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: moods.isEmpty
-            ? [
-                Text(
-                  'No moods yet. Log your first check-in.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ]
-            : moods
-                .map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: MoodHistoryTile(
-                      mood: entry.mood,
-                      time: _formatMoodTime(entry.loggedAt),
-                      note: entry.note,
+      body: moods.isEmpty
+          ? const EmptyState(
+              icon: Icons.mood_outlined,
+              title: 'No moods yet',
+              subtitle: 'Log your first check-in from the Journal tab.',
+            )
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: moods
+                  .map(
+                    (entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Dismissible(
+                        key: ValueKey(entry.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        onDismissed: (_) => _remove(context, store, entry),
+                        child: MoodHistoryTile(
+                          mood: entry.mood,
+                          time: _formatMoodTime(entry.loggedAt),
+                          note: entry.note,
+                        ),
+                      ),
                     ),
-                  ),
-                )
-                .toList(),
-      ),
+                  )
+                  .toList(),
+            ),
     );
   }
 }
 
 String _formatMoodTime(DateTime time) {
   final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final loggedDay = DateTime(time.year, time.month, time.day);
-  final dayDiff = today.difference(loggedDay).inDays;
-  final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
-  final minute = time.minute.toString().padLeft(2, '0');
-  final suffix = time.hour >= 12 ? 'pm' : 'am';
+  final clock = formatClock(time);
+  final dayDiff = daysBetween(time, now);
   if (dayDiff == 0) {
-    return 'Today - $hour:$minute $suffix';
+    return 'Today - $clock';
   }
   if (dayDiff == 1) {
-    return 'Yesterday - $hour:$minute $suffix';
+    return 'Yesterday - $clock';
   }
-  return '${time.month}/${time.day} - $hour:$minute $suffix';
+  return '${formatShortDate(time)} - $clock';
 }

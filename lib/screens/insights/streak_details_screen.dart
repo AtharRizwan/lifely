@@ -23,19 +23,19 @@ class StreakDetailsScreen extends StatelessWidget {
           MetricTile(
             label: 'Mood streak',
             value: '${store.moodStreak} days',
-            detail: 'Consistent check-ins',
+            detail: 'Days in a row with a mood check-in',
           ),
           const SizedBox(height: 12),
           MetricTile(
             label: 'Completion streak',
             value: '${store.taskStreak} days',
-            detail: 'Daily tasks completed',
+            detail: 'Days in a row with a task completed',
           ),
           const SizedBox(height: 12),
           MetricTile(
             label: 'Planner streak',
-            value: '${store.plannerBlocks.isEmpty ? 0 : 7} days',
-            detail: 'Weekly planning sessions',
+            value: '${store.plannerStreak} days',
+            detail: 'Days in a row with a planner block',
           ),
         ],
       ),

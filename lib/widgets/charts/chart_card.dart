@@ -10,12 +10,16 @@ class ChartCard extends StatelessWidget {
     required this.subtitle,
     required this.bars,
     this.barColor,
+    this.labels,
   });
 
   final String title;
   final String subtitle;
   final List<int> bars;
   final Color? barColor;
+
+  /// One label per bar; defaults to Monday-first weekday initials.
+  final List<String>? labels;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +68,8 @@ class ChartCard extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                          final days =
+                              labels ?? const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
                           if (value.toInt() < days.length) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
