@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+    <rect width="1024" height="1024" fill="#fff"/>
+    <g transform="translate(489.941 423.765) scale(1.102941176470588) rotate(-45)">
+      <path d="M -112 -75 L -112 30 L 118 30" fill="none" stroke="#000" stroke-width="60"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </mask>
+  <g mask="url(#cut)">
+    <g transform="translate(489.941 423.765) scale(1.102941176470588) rotate(-45)">
+      <path d="M -250 0 C -200 -215 95 -115 265 0 C 95 115 -200 215 -250 0 Z" fill="#FFFFFF"/>
+      <path d="M -246 0 Q -286 4 -316 26" fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>
